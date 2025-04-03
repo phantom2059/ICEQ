@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор тестов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="theme-switch">
+        <label for="theme-switch" class="toggle-label"></label>
+    </div>
+    <div class="container">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="card">
+                <h1>Генератор тестов</h1>
+
+                <div class="tab-container">
+                    <div class="input-tabs">
+                        <button class="tab-btn active" data-tab="text">Текст</button>
+                        <button class="tab-btn" data-tab="file">Файл</button>
+                    </div>
+
+                    <div id="text-input-tab" class="tab-content active">
+                        <textarea id="text-content" rows="8" placeholder="Введите текст для генерации вопросов..."></textarea>
+                    </div>
+
+                    <div id="file-input-tab" class="tab-content">
+                        <div id="drop-area" class="upload-area">
+                            <p>Перетащите файл сюда или</p>
+                            <input type="file" id="file-upload" accept=".txt,.doc,.docx,.pdf">
+                            <label for="file-upload" class="custom-file-upload">Выберите файл</label>
+                            <p id="file-name" class="file-name"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question-count">
+                    <label for="question-number">Количество вопросов:</label>
+                    <input type="number" id="question-number" min="5" max="50" value="10">
+                </div>
+
+                <div class="bottom-panel">
+                    <button id="generate-btn" class="btn primary-btn">Создать тест</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-screen" class="screen">
+            <div class="card">
+                <h2>Генерация теста...</h2>
+                <div class="loader"></div>
+                <div id="loading-log" class="loading-log"></div>
+            </div>
+        </div>
+
+        <!-- Question Screen -->
+        <div id="question-screen" class="screen">
+            <div class="card question-card">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <h3 id="question-count">Вопрос 1 из 10</h3>
+                <p id="question-text" class="question-text"></p>
+
+                <div id="answers-container" class="answers-container"></div>
+
+                <div class="bottom-panel">
+                    <button id="skip-btn" class="btn secondary-btn">Пропустить</button>
+                    <button id="answer-btn" class="btn primary-btn" disabled>Ответить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Screen -->
+        <div id="explanation-screen" class="screen">
+            <div class="card explanation-card">
+                <h2>Результат</h2>
+                <p id="correct-answer" class="correct-answer"></p>
+                <div class="explanation-text">
+                    <p id="explanation-text"></p>
+                </div>
+                <div class="bottom-panel">
+                    <button id="next-btn" class="btn primary-btn">Далее</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <div class="card results-card">
+                <h2>Результаты теста</h2>
+                <div class="score">
+                    <span id="score">0/10</span>
+                </div>
+                <div class="result-actions">
+                    <button id="review-answers-btn" class="btn secondary-btn">Просмотреть ответы</button>
+                    <button id="restart-btn" class="btn primary-btn">Начать заново</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
