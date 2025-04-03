@@ -1,4 +1,4 @@
-<center><img src=img/logo.png width=300px></center>
+<p align="center"><img src=img/logo.png width=300px></p>
 <br>
 
 **ICEQ** (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.
@@ -7,10 +7,10 @@
 
 1. Текст по абзацам разбивается на ```чанки```. Чанки фильтруются и векторизуются.
 
-<center><img src=img/chunk_split.png width=400px></center>
+<p align="center"><img src=img/chunk_split.png width=400px></p>
 
 2. Эмбеддинги чанков кластеризуется на ```количество_чанков * 0.01``` кластеров. Из каждого кластера берётся ближайший к центру кластера объект.
-<center><img src=img/clustering.png width=400px></center>
+<p align="center"><img src=img/clustering.png width=400px></p>
 
 3. Центральные объекты каждого кластера передаются на вход ```LLM (DeepSeek)``` при помощи ```API```.
 
@@ -53,13 +53,30 @@ generator = QuestionsGenerator()
 questions = generator.generate(text, 10)
 ```
 
-```QuestionsGenerator.generate(text: str, questions_num: int) -> list[dict]``` возвращает список со словарями. Каждый словарь представляет из себя описание вопроса:
+```QuestionsGenerator.generate(text: str, questions_num: int) -> list[dict]``` возвращает список со словарями. Каждый словарь представляет из себя описание вопроса. Пример словаря:
 
 ```json
 {
-   "question": str,
-   "answers": [{"answer": str, "is_correct": bool}, ...],
-   "explanation": str
+   "question": "Кто является автором романа «Евгений Онегин»?",
+   "answers": [
+      {
+         "answer": "Александр Пушкин",
+         "is_correct": true
+      },
+      {
+         "answer": "Лев Толстой",
+         "is_correct": false
+      },
+      {
+         "answer": "Фёдор Достоевский",
+         "is_correct": false
+      },
+      {
+         "answer": "Николай Гоголь",
+         "is_correct": false
+      }
+   ],
+   "explanation": "Роман в стихах «Евгений Онегин» написан Александром Сергеевичем Пушкиным и является одним из ключевых произведений русской литературы."
 }
 ```
 
