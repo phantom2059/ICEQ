@@ -80,6 +80,7 @@
         <div id="explanation-screen" class="screen">
             <div class="card explanation-card">
                 <h2>Результат</h2>
+                <p id="user-answer" class="user-answer"></p>
                 <p id="correct-answer" class="correct-answer"></p>
                 <div class="explanation-text">
                     <p id="explanation-text"></p>
@@ -100,6 +101,17 @@
                 <div class="result-actions">
                     <button id="review-answers-btn" class="btn secondary-btn">Просмотреть ответы</button>
                     <button id="restart-btn" class="btn primary-btn">Начать заново</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review Answers Screen -->
+        <div id="review-answers-screen" class="screen">
+            <div class="card review-card">
+                <h2>Обзор вопросов</h2>
+                <div id="review-container" class="review-container"></div>
+                <div class="bottom-panel">
+                    <button id="back-to-results-btn" class="btn primary-btn">Назад к результатам</button>
                 </div>
             </div>
         </div>

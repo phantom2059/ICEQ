@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const questionScreen = document.getElementById('question-screen');
     const explanationScreen = document.getElementById('explanation-screen');
     const resultsScreen = document.getElementById('results-screen');
+    const reviewAnswersScreen = document.getElementById('review-answers-screen');
 
     const textInputTab = document.getElementById('text-input-tab');
     const fileInputTab = document.getElementById('file-input-tab');
@@ -23,6 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const skipBtn = document.getElementById('skip-btn');
     const progressFill = document.getElementById('progress-fill');
 
+    const userAnswerDisplay = document.getElementById('user-answer');
     const correctAnswerDisplay = document.getElementById('correct-answer');
     const explanationText = document.getElementById('explanation-text');
     const nextBtn = document.getElementById('next-btn');
@@ -30,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const score = document.getElementById('score');
     const reviewAnswersBtn = document.getElementById('review-answers-btn');
     const restartBtn = document.getElementById('restart-btn');
+
+    const reviewContainer = document.getElementById('review-container');
+    const backToResultsBtn = document.getElementById('back-to-results-btn');
 
     const themeSwitch = document.getElementById('theme-switch');
     const questionNumber = document.getElementById('question-number');
@@ -41,6 +46,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let userAnswers = [];
     let selectedOption = null;
     let correctCount = 0;
+
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('quizTheme');
+    if (savedTheme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        themeSwitch.checked = true;
+    }
 
     // Ensure quiz state is reset
     showScreen(startScreen);
@@ -97,6 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     reviewAnswersBtn.addEventListener('click', reviewAnswers);
     restartBtn.addEventListener('click', restartQuiz);
+    backToResultsBtn.addEventListener('click', () => showScreen(resultsScreen));
 
     // Theme toggle
     themeSwitch.addEventListener('change', function () {
@@ -193,6 +206,8 @@ document.addEventListener('DOMContentLoaded', function () {
         logMessage("Анализ текста...");
         logMessage("Начинаем генерацию вопросов...");
 
+        // В реальном проекте здесь будет запрос к API
+        // Для примера используем моковые данные
         fetch('/generate', {
             method: 'POST',
             headers: {
@@ -235,6 +250,41 @@ document.addEventListener('DOMContentLoaded', function () {
         .catch(error => {
             logMessage(`Произошла ошибка: ${error.message}`);
             setTimeout(() => showScreen(startScreen), 2000);
+
+            // Пример данных для отладки
+            console.log("Проблема с сервером, использую тестовые данные для демо");
+
+            setTimeout(() => {
+                const mockQuestions = [
+                    {
+                        question: "Какая планета самая большая в Солнечной системе?",
+                        answers: [
+                            { answer: "Земля", is_correct: false },
+                            { answer: "Юпитер", is_correct: true },
+                            { answer: "Сатурн", is_correct: false },
+                            { answer: "Марс", is_correct: false }
+                        ],
+                        explanation: "Юпитер является самой большой планетой в Солнечной системе с массой, в 318 раз превышающей массу Земли."
+                    },
+                    {
+                        question: "В каком году началась Первая мировая война?",
+                        answers: [
+                            { answer: "1914", is_correct: true },
+                            { answer: "1918", is_correct: false },
+                            { answer: "1939", is_correct: false },
+                            { answer: "1912", is_correct: false }
+                        ],
+                        explanation: "Первая мировая война началась 28 июля 1914 года и продолжалась до 11 ноября 1918 года."
+                    }
+                ];
+
+                logMessage("Демо-режим: загружаю тестовые вопросы");
+                quizData = mockQuestions;
+                currentQuestion = 0;
+                userAnswers = Array(quizData.length).fill(null);
+                correctCount = 0;
+                startQuiz();
+            }, 2000);
         });
     }
 
@@ -303,11 +353,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const correctAnswerObj = question.answers.find(option => option.is_correct);
 
         userAnswers[currentQuestion] = selectedOption;
-        if (selectedOption === correctAnswerObj.answer) {
+        const isCorrect = selectedOption === correctAnswerObj.answer;
+
+        if (isCorrect) {
             correctCount++;
         }
 
-        showAnswerExplanation(correctAnswerObj.answer);
+        showAnswerExplanation(correctAnswerObj.answer, isCorrect);
     }
 
     // Skip the current question
@@ -323,10 +375,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Show explanation for the current answer
-    function showAnswerExplanation(correctAnswer) {
+    function showAnswerExplanation(correctAnswer, isCorrect) {
         const question = quizData[currentQuestion];
 
         showScreen(explanationScreen);
+
+        // Показываем ответ пользователя с соответствующим цветом
+        userAnswerDisplay.textContent = `Ваш ответ: ${selectedOption}`;
+        userAnswerDisplay.className = 'user-answer';
+        userAnswerDisplay.classList.add(isCorrect ? 'correct' : 'incorrect');
 
         correctAnswerDisplay.textContent = `Правильный ответ: ${correctAnswer}`;
         explanationText.textContent = question.explanation || "Объяснение отсутствует.";
@@ -357,7 +414,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Review answers
     function reviewAnswers() {
-        alert("Функция просмотра ответов будет доступна в следующей версии");
+        showScreen(reviewAnswersScreen);
+        reviewContainer.innerHTML = '';
+
+        quizData.forEach((question, index) => {
+            const userAnswer = userAnswers[index];
+            const correctAnswer = question.answers.find(answer => answer.is_correct).answer;
+            const isCorrect = userAnswer === correctAnswer;
+            const isSkipped = userAnswer === null;
+
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'review-item';
+
+            const questionTitle = document.createElement('h3');
+            questionTitle.textContent = `Вопрос ${index + 1}`;
+            reviewItem.appendChild(questionTitle);
+
+            const questionContent = document.createElement('p');
+            questionContent.textContent = question.question;
+            reviewItem.appendChild(questionContent);
+
+            // User Answer
+            const userAnswerElement = document.createElement('div');
+
+            if (isSkipped) {
+                userAnswerElement.className = 'skipped';
+                userAnswerElement.textContent = 'Вопрос был пропущен';
+            } else {
+                userAnswerElement.className = 'review-user-answer';
+                userAnswerElement.classList.add(isCorrect ? 'correct' : 'incorrect');
+                userAnswerElement.textContent = `Ваш ответ: ${userAnswer}`;
+            }
+
+            reviewItem.appendChild(userAnswerElement);
+
+            // Correct Answer
+            const correctAnswerElement = document.createElement('div');
+            correctAnswerElement.className = 'review-correct-answer';
+            correctAnswerElement.textContent = `Правильный ответ: ${correctAnswer}`;
+            reviewItem.appendChild(correctAnswerElement);
+
+            // Explanation
+            if (question.explanation) {
+                const explanationElement = document.createElement('div');
+                explanationElement.className = 'review-explanation';
+                explanationElement.textContent = question.explanation;
+                reviewItem.appendChild(explanationElement);
+            }
+
+            reviewContainer.appendChild(reviewItem);
+        });
     }
 
     // Restart the quiz
@@ -370,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Show specific screen and hide others
     function showScreen(screenToShow) {
-        [startScreen, loadingScreen, questionScreen, explanationScreen, resultsScreen].forEach(screen => {
+        [startScreen, loadingScreen, questionScreen, explanationScreen, resultsScreen, reviewAnswersScreen].forEach(screen => {
             screen.classList.remove('active');
         });
         screenToShow.classList.add('active');
