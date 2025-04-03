@@ -91,6 +91,13 @@ h2 {
     font-weight: 500;
     transition: background var(--transition-speed) ease, transform var(--transition-speed) ease;
     outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon {
+    margin-right: 8px;
 }
 
 .btn:hover {
@@ -153,6 +160,13 @@ h2 {
     border-radius: 0 6px 6px 0;
 }
 
+/* Handle middle button for 3 tabs */
+.tab-btn:not(:first-child):not(:last-child) {
+    border-radius: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 .tab-btn.active {
     background: var(--accent-primary);
     color: white;
@@ -194,7 +208,7 @@ h2 {
     background-color: rgba(0, 188, 212, 0.1);
 }
 
-#file-upload {
+#file-upload, #ready-test-upload {
     display: none;
 }
 
@@ -278,6 +292,14 @@ h2 {
     font-size: 14px;
     margin-top: 20px;
     max-width: 600px;
+}
+
+/* Test Ready Screen */
+.test-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
 }
 
 /* Question Screen */
@@ -504,7 +526,11 @@ h2 {
     }
 
     .bottom-panel {
-        gap: 12px; /* Адаптивный gap для мобильных */
+        gap: 12px;
+    }
+
+    .test-actions {
+        flex-direction: column;
     }
 
     .side-panel {
@@ -521,6 +547,18 @@ h2 {
 
     .upload-area {
         padding: 20px;
+    }
+
+    .input-tabs {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .tab-btn:first-child,
+    .tab-btn:last-child,
+    .tab-btn:not(:first-child):not(:last-child) {
+        border-radius: 6px;
+        border: none;
     }
 }
 

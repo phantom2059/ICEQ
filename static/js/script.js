@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // DOM Elements
     const startScreen = document.getElementById('start-screen');
     const loadingScreen = document.getElementById('loading-screen');
+    const testReadyScreen = document.getElementById('test-ready-screen');
     const questionScreen = document.getElementById('question-screen');
     const explanationScreen = document.getElementById('explanation-screen');
     const resultsScreen = document.getElementById('results-screen');
@@ -9,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const textInputTab = document.getElementById('text-input-tab');
     const fileInputTab = document.getElementById('file-input-tab');
+    const readyTestTab = document.getElementById('ready-test-tab');
     const tabButtons = document.querySelectorAll('.tab-btn');
 
     const textContent = document.getElementById('text-content');
@@ -16,6 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const fileName = document.getElementById('file-name');
     const dropArea = document.getElementById('drop-area');
     const generateBtn = document.getElementById('generate-btn');
+
+    const readyTestUpload = document.getElementById('ready-test-upload');
+    const readyTestName = document.getElementById('ready-test-name');
+    const readyTestDropArea = document.getElementById('ready-test-drop-area');
+
+    const readyQuestionCount = document.getElementById('ready-question-count');
+    const downloadTestBtn = document.getElementById('download-test-btn');
+    const startTestBtn = document.getElementById('start-test-btn');
 
     const questionCount = document.getElementById('question-count');
     const questionText = document.getElementById('question-text');
@@ -66,23 +76,34 @@ document.addEventListener('DOMContentLoaded', function () {
             button.classList.add('active');
 
             const tabName = button.getAttribute('data-tab');
+
+            // Hide all tab content
+            [textInputTab, fileInputTab, readyTestTab].forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
             if (tabName === 'text') {
                 textInputTab.classList.add('active');
-                fileInputTab.classList.remove('active');
-            } else {
-                textInputTab.classList.remove('active');
+                document.querySelector('.question-count').style.display = 'flex';
+                generateBtn.textContent = 'Создать тест';
+            } else if (tabName === 'file') {
                 fileInputTab.classList.add('active');
+                document.querySelector('.question-count').style.display = 'flex';
+                generateBtn.textContent = 'Создать тест';
+            } else if (tabName === 'ready') {
+                readyTestTab.classList.add('active');
+                document.querySelector('.question-count').style.display = 'none';
+                generateBtn.textContent = 'Загрузить тест';
             }
         });
     });
 
     // File handling
     fileUpload.addEventListener('change', handleFile);
+    readyTestUpload.addEventListener('change', handleReadyTestFile);
 
-    // Update the file input accept attribute
-    fileUpload.setAttribute('accept', '.txt,.pdf,.docx,.doc');
-
-    // Drag and drop functionality
+    // Drag and drop functionality for text files
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropArea.addEventListener(eventName, preventDefaults, false);
     });
@@ -101,12 +122,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dropArea.addEventListener('drop', handleDrop, false);
 
+    // Drag and drop functionality for JSON test files
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        readyTestDropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        readyTestDropArea.addEventListener(eventName, () => {
+            readyTestDropArea.classList.add('active');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        readyTestDropArea.addEventListener(eventName, () => {
+            readyTestDropArea.classList.remove('active');
+        }, false);
+    });
+
+    readyTestDropArea.addEventListener('drop', handleReadyTestDrop, false);
+
     // Button actions
-    generateBtn.addEventListener('click', startGeneration);
+    generateBtn.addEventListener('click', startAction);
+    downloadTestBtn.addEventListener('click', downloadTest);
+    startTestBtn.addEventListener('click', startQuiz);
     answerBtn.addEventListener('click', submitAnswer);
     skipBtn.addEventListener('click', skipQuestion);
     nextBtn.addEventListener('click', goToNextQuestion);
-
     reviewAnswersBtn.addEventListener('click', reviewAnswers);
     restartBtn.addEventListener('click', restartQuiz);
     backToResultsBtn.addEventListener('click', () => showScreen(resultsScreen));
@@ -123,6 +164,64 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Functions
+
+    // Decide which action to take based on active tab
+    function startAction() {
+        const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+
+        if (activeTab === 'ready') {
+            loadReadyTest();
+        } else {
+            startGeneration();
+        }
+    }
+
+    // Load ready test
+    function loadReadyTest() {
+        if (!readyTestUpload.files.length) {
+            alert('Пожалуйста, выберите файл теста для загрузки.');
+            return;
+        }
+
+        const file = readyTestUpload.files[0];
+        const reader = new FileReader();
+
+        showScreen(loadingScreen);
+        logMessage(`Загрузка готового теста: ${file.name}`);
+
+        reader.onload = function(e) {
+            try {
+                const content = e.target.result;
+                const testData = JSON.parse(content);
+
+                if (!testData.questions || !Array.isArray(testData.questions)) {
+                    throw new Error('Некорректный формат файла теста');
+                }
+
+                logMessage('Тест успешно загружен');
+                quizData = testData.questions;
+                readyQuestionCount.textContent = quizData.length;
+
+                currentQuestion = 0;
+                userAnswers = Array(quizData.length).fill(null);
+                correctCount = 0;
+
+                setTimeout(() => {
+                    showScreen(testReadyScreen);
+                }, 1000);
+            } catch (error) {
+                logMessage(`Ошибка загрузки теста: ${error.message}`);
+                setTimeout(() => showScreen(startScreen), 2000);
+            }
+        };
+
+        reader.onerror = function() {
+            logMessage('Ошибка при чтении файла');
+            setTimeout(() => showScreen(startScreen), 2000);
+        };
+
+        reader.readAsText(file);
+    }
 
     // Prevent default actions for drag and drop
     function preventDefaults(e) {
@@ -141,24 +240,118 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Handle dropped test files
+    function handleReadyTestDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length) {
+            readyTestUpload.files = files;
+            handleReadyTestFile();
+        }
+    }
+
     // Handle file selection
     function handleFile() {
         const file = fileUpload.files[0];
         if (file) {
             fileName.textContent = file.name;
-            const reader = new FileReader();
-
-            reader.onload = function (e) {
-                textContent.value = e.target.result;
-            };
-
-            reader.onerror = function () {
-                alert("Ошибка чтения файла.");
-            };
-
-            reader.readAsText(file);
+            processFile(file);
         } else {
             fileName.textContent = "";
+        }
+    }
+
+    // Handle ready test file selection
+    function handleReadyTestFile() {
+        const file = readyTestUpload.files[0];
+        if (file) {
+            readyTestName.textContent = file.name;
+        } else {
+            readyTestName.textContent = "";
+        }
+    }
+
+    // Process file based on type
+    function processFile(file) {
+        const extension = file.name.split('.').pop().toLowerCase();
+
+        if (['txt'].includes(extension)) {
+            // For text files
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                textContent.value = e.target.result;
+            };
+            reader.onerror = function() {
+                alert("Ошибка чтения файла.");
+            };
+            reader.readAsText(file);
+        }
+        else if (['docx', 'doc'].includes(extension)) {
+            // For DOCX files using mammoth.js
+            if (typeof mammoth !== 'undefined') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    mammoth.extractRawText({arrayBuffer: arrayBuffer})
+                        .then(function(result) {
+                            textContent.value = result.value;
+                        })
+                        .catch(function(error) {
+                            console.error(error);
+                            alert("Ошибка при обработке DOCX файла: " + error.message);
+                        });
+                };
+                reader.onerror = function() {
+                    alert("Ошибка чтения файла.");
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert("Не удалось загрузить библиотеку для работы с DOCX файлами.");
+            }
+        }
+        else if (extension === 'pdf') {
+            // For PDF files using pdf.js
+            if (typeof pdfjsLib !== 'undefined') {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const loadingTask = pdfjsLib.getDocument({data: arrayBuffer});
+                    loadingTask.promise.then(function(pdf) {
+                        let allTextContent = '';
+                        const maxPages = pdf.numPages;
+                        let loadedPages = 0;
+
+                        function processPDFPages(pageNumber) {
+                            if (pageNumber > maxPages) {
+                                textContent.value = allTextContent;
+                                return;
+                            }
+
+                            pdf.getPage(pageNumber).then(function(page) {
+                                page.getTextContent().then(function(textContent) {
+                                    const textItems = textContent.items.map(item => item.str);
+                                    allTextContent += textItems.join(' ') + '\n\n';
+                                    processPDFPages(pageNumber + 1);
+                                });
+                            });
+                        }
+
+                        processPDFPages(1);
+                    });
+                };
+                reader.onerror = function() {
+                    alert("Ошибка чтения файла.");
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert("Не удалось загрузить библиотеку для работы с PDF файлами.");
+            }
+        }
+        else {
+            alert("Неподдерживаемый тип файла. Пожалуйста, выберите .txt, .docx или .pdf файл.");
+            fileName.textContent = "";
+            fileUpload.value = "";
         }
     }
 
@@ -184,20 +377,8 @@ document.addEventListener('DOMContentLoaded', function () {
             generateFromText(textContent.value);
         } else {
             const file = fileUpload.files[0];
-            const reader = new FileReader();
-
-            logMessage(`Чтение файла: ${file.name}`);
-            reader.onload = function (e) {
-                logMessage("Файл успешно прочитан");
-                generateFromText(e.target.result);
-            };
-
-            reader.onerror = function () {
-                logMessage("Ошибка чтения файла");
-                setTimeout(() => showScreen(startScreen), 2000);
-            };
-
-            reader.readAsText(file);
+            logMessage(`Обработка файла: ${file.name}`);
+            generateFromText(textContent.value);
         }
     }
 
@@ -207,7 +388,6 @@ document.addEventListener('DOMContentLoaded', function () {
         logMessage("Начинаем генерацию вопросов...");
 
         // В реальном проекте здесь будет запрос к API
-        // Для примера используем моковые данные
         fetch('/generate', {
             method: 'POST',
             headers: {
@@ -230,13 +410,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     logMessage(`Успешно сгенерировано ${data.questions.length} вопросов`);
 
                     quizData = data.questions;
+                    readyQuestionCount.textContent = quizData.length;
 
                     currentQuestion = 0;
                     userAnswers = Array(quizData.length).fill(null);
                     correctCount = 0;
 
                     setTimeout(() => {
-                        startQuiz();
+                        showScreen(testReadyScreen);
                     }, 1000);
                 } else {
                     logMessage("Не удалось сгенерировать вопросы. Попробуйте другой текст.");
@@ -249,12 +430,10 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
             logMessage(`Произошла ошибка: ${error.message}`);
-            setTimeout(() => showScreen(startScreen), 2000);
-
-            // Пример данных для отладки
-            console.log("Проблема с сервером, использую тестовые данные для демо");
+            logMessage("Генерирую тестовые вопросы для демонстрации...");
 
             setTimeout(() => {
+                // Mock data for demonstration
                 const mockQuestions = [
                     {
                         question: "Какая планета самая большая в Солнечной системе?",
@@ -275,17 +454,81 @@ document.addEventListener('DOMContentLoaded', function () {
                             { answer: "1912", is_correct: false }
                         ],
                         explanation: "Первая мировая война началась 28 июля 1914 года и продолжалась до 11 ноября 1918 года."
+                    },
+                    {
+                        question: "Кто написал 'Война и мир'?",
+                        answers: [
+                            { answer: "Фёдор Достоевский", is_correct: false },
+                            { answer: "Лев Толстой", is_correct: true },
+                            { answer: "Антон Чехов", is_correct: false },
+                            { answer: "Иван Тургенев", is_correct: false }
+                        ],
+                        explanation: "Роман 'Война и мир' был написан Львом Николаевичем Толстым и опубликован в 1865-1869 годах."
+                    },
+                    {
+                        question: "Какой элемент имеет химический символ 'H'?",
+                        answers: [
+                            { answer: "Гелий", is_correct: false },
+                            { answer: "Водород", is_correct: true },
+                            { answer: "Ртуть", is_correct: false },
+                            { answer: "Гафний", is_correct: false }
+                        ],
+                        explanation: "Химический символ 'H' соответствует водороду (от латинского 'hydrogenium')."
+                    },
+                    {
+                        question: "Какой год считается годом основания Москвы?",
+                        answers: [
+                            { answer: "1147", is_correct: true },
+                            { answer: "1703", is_correct: false },
+                            { answer: "988", is_correct: false },
+                            { answer: "1237", is_correct: false }
+                        ],
+                        explanation: "Первое упоминание о Москве в летописях относится к 1147 году, когда Юрий Долгорукий пригласил в Москву своего союзника князя Святослава Ольговича."
                     }
                 ];
 
-                logMessage("Демо-режим: загружаю тестовые вопросы");
+                logMessage("Создано 5 тестовых вопросов");
                 quizData = mockQuestions;
+                readyQuestionCount.textContent = quizData.length;
+
                 currentQuestion = 0;
                 userAnswers = Array(quizData.length).fill(null);
                 correctCount = 0;
-                startQuiz();
+
+                setTimeout(() => {
+                    showScreen(testReadyScreen);
+                }, 1000);
             }, 2000);
         });
+    }
+
+    // Download test as JSON file
+    function downloadTest() {
+        if (!quizData || quizData.length === 0) {
+            alert("Нет данных для скачивания.");
+            return;
+        }
+
+        const testData = {
+            title: "Тест",
+            dateCreated: new Date().toISOString(),
+            questions: quizData
+        };
+
+        const jsonData = JSON.stringify(testData, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Тест_${new Date().toLocaleDateString().replace(/\./g, '-')}.json`;
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 
     // Display logging message in the loading screen
@@ -298,6 +541,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Start the quiz
     function startQuiz() {
+        currentQuestion = 0;
+        userAnswers = Array(quizData.length).fill(null);
+        correctCount = 0;
+
         showScreen(questionScreen);
         displayQuestion();
     }
@@ -476,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Show specific screen and hide others
     function showScreen(screenToShow) {
-        [startScreen, loadingScreen, questionScreen, explanationScreen, resultsScreen, reviewAnswersScreen].forEach(screen => {
+        [startScreen, loadingScreen, testReadyScreen, questionScreen, explanationScreen, resultsScreen, reviewAnswersScreen].forEach(screen => {
             screen.classList.remove('active');
         });
         screenToShow.classList.add('active');

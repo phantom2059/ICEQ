@@ -6,6 +6,10 @@
     <title>Генератор тестов</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Добавляем библиотеку для работы с PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <!-- Добавляем библиотеку для работы с DOCX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 </head>
 <body>
     <div class="theme-toggle">
@@ -22,6 +26,7 @@
                     <div class="input-tabs">
                         <button class="tab-btn active" data-tab="text">Текст</button>
                         <button class="tab-btn" data-tab="file">Файл</button>
+                        <button class="tab-btn" data-tab="ready">Готовый тест</button>
                     </div>
 
                     <div id="text-input-tab" class="tab-content active">
@@ -34,6 +39,15 @@
                             <input type="file" id="file-upload" accept=".txt,.doc,.docx,.pdf">
                             <label for="file-upload" class="custom-file-upload">Выберите файл</label>
                             <p id="file-name" class="file-name"></p>
+                        </div>
+                    </div>
+
+                    <div id="ready-test-tab" class="tab-content">
+                        <div id="ready-test-drop-area" class="upload-area">
+                            <p>Перетащите файл теста (.json) сюда или</p>
+                            <input type="file" id="ready-test-upload" accept=".json">
+                            <label for="ready-test-upload" class="custom-file-upload">Загрузить готовый тест</label>
+                            <p id="ready-test-name" class="file-name"></p>
                         </div>
                     </div>
                 </div>
@@ -55,6 +69,28 @@
                 <h2>Генерация теста...</h2>
                 <div class="loader"></div>
                 <div id="loading-log" class="loading-log"></div>
+            </div>
+        </div>
+
+        <!-- Test Ready Screen -->
+        <div id="test-ready-screen" class="screen">
+            <div class="card">
+                <h2>Тест готов!</h2>
+                <p>Ваш тест из <span id="ready-question-count">10</span> вопросов успешно создан.</p>
+                <div class="test-actions">
+                    <button id="download-test-btn" class="btn secondary-btn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        Скачать тест
+                    </button>
+                    <button id="start-test-btn" class="btn primary-btn">
+                        <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M8 5v14l11-7-11-7z"/>
+                        </svg>
+                        Пройти онлайн
+                    </button>
+                </div>
             </div>
         </div>
 
