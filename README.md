@@ -1,4 +1,4 @@
-<p align="center"><img src=img/logo.png width=300px></p>
+<p align="center"><img src=img/logo.png width=450px></p>
 
 **ICEQ** (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.
 
