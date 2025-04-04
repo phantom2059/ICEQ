@@ -1,9 +1,23 @@
-from flask import Flask, render_template, request, jsonify, send_file
+'''
+ICEQ (2025) - Веб-интерфейс приложения
+
+Основной функционал:
+- Flask-приложение для взаимодействия с пользователем
+- Визуализация процесса генерации вопросов
+- Отображение результатов в удобном формате
+
+Запуск:
+    >>> python app.py
+'''
+
 import os
 import json
 import csv
 import io
 from datetime import datetime
+
+from flask import Flask, render_template, request, jsonify, send_file
+
 from generation import QuestionsGenerator
 
 app = Flask(__name__)
@@ -87,7 +101,7 @@ def export_json(questions, user_answers=None):
     json_bytes = json_data.encode('utf-8')
 
     # Создаем имя файла
-    filename = f"ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.json"
+    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.json'
 
     # Отправляем файл пользователю без сохранения на сервере
     return send_file(
@@ -130,7 +144,7 @@ def export_csv(questions, user_answers=None):
 
     output.seek(0)
 
-    filename = f"ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.csv'
     return send_file(
         io.BytesIO(output.getvalue().encode('utf-8')),
         as_attachment=True,
@@ -142,57 +156,57 @@ def export_csv(questions, user_answers=None):
 def export_txt(questions, user_answers=None):
     output = io.StringIO()
 
-    output.write("ICEQ - Результаты теста\n")
-    output.write(f"Дата: {datetime.now().strftime('%Y-%m-%d')}\n\n")
+    output.write('ICEQ - Результаты теста\n')
+    output.write(f'Дата: {datetime.now().strftime('%Y-%m-%d')}\n\n')
 
     if user_answers and len(user_answers) == len(questions):
         # Calculate score
         correct_count = sum(1 for i, q in enumerate(questions) if
                             user_answers[i] == next((a['answer'] for a in q['answers'] if a['is_correct']), ''))
 
-        output.write(f"Результат: {correct_count} из {len(questions)} ")
-        output.write(f"({round((correct_count / len(questions)) * 100)}%)\n\n")
+        output.write(f'Результат: {correct_count} из {len(questions)} ')
+        output.write(f'({round((correct_count / len(questions)) * 100)}%)\n\n')
 
         # Write questions with user answers
         for i, question in enumerate(questions):
-            output.write(f"Вопрос {i + 1}: {question['question']}\n")
+            output.write(f'Вопрос {i + 1}: {question['question']}\n')
 
             user_answer = user_answers[i] if i < len(user_answers) else None
             correct_answer = next((a['answer'] for a in question['answers'] if a['is_correct']), '')
 
             if user_answer is None:
-                output.write("Ваш ответ: ПРОПУЩЕН\n")
-                status = "Пропущен"
+                output.write('Ваш ответ: ПРОПУЩЕН\n')
+                status = 'Пропущен'
             else:
-                output.write(f"Ваш ответ: {user_answer}\n")
-                status = "Верно" if user_answer == correct_answer else "Неверно"
+                output.write(f'Ваш ответ: {user_answer}\n')
+                status = 'Верно' if user_answer == correct_answer else 'Неверно'
 
-            output.write(f"Правильный ответ: {correct_answer}\n")
-            output.write(f"Статус: {status}\n")
+            output.write(f'Правильный ответ: {correct_answer}\n')
+            output.write(f'Статус: {status}\n')
 
             if question.get('explanation'):
-                output.write(f"Объяснение: {question['explanation']}\n")
+                output.write(f'Объяснение: {question['explanation']}\n')
 
-            output.write("\n")
+            output.write('\n')
     else:
         # Just write questions and answers without user responses
         for i, question in enumerate(questions):
-            output.write(f"Вопрос {i + 1}: {question['question']}\n")
+            output.write(f'Вопрос {i + 1}: {question['question']}\n')
 
             for j, answer in enumerate(question['answers']):
                 if answer.get('is_correct'):
-                    output.write(f"✓ {answer['answer']}\n")
+                    output.write(f'✓ {answer['answer']}\n')
                 else:
-                    output.write(f"- {answer['answer']}\n")
+                    output.write(f'- {answer['answer']}\n')
 
             if question.get('explanation'):
-                output.write(f"\nОбъяснение: {question['explanation']}\n")
+                output.write(f'\nОбъяснение: {question['explanation']}\n')
 
-            output.write("\n")
+            output.write('\n')
 
     output.seek(0)
 
-    filename = f"ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.txt"
+    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.txt'
     return send_file(
         io.BytesIO(output.getvalue().encode('utf-8')),
         as_attachment=True,

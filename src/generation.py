@@ -1,13 +1,26 @@
+'''
+ICEQ (2025) - Модуль генерации вопросов
+
+Основной функционал:
+- Класс QuestionsGenerator для создания вопросов по тексту
+- Постобработка и форматирование результатов
+
+Пример использования:
+    >>> generator = QuestionsGenerator()
+    >>> questions = generator.generate(text, 10)
+'''
+
+
 import re
 import os
-import numpy as np
+
+import torch
 import faiss
+import numpy as np
 from dotenv import load_dotenv
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
-import torch
-from torch.onnx.symbolic_opset11 import chunk
 
 load_dotenv()
 
@@ -18,15 +31,60 @@ MIN_CLUSTERS_NUM = 5
 # Максимальное количество кластеров
 MAX_CLUSTERS_NUM = 500
 
+# Тег в тексте промпта, который нужно заменить на количество вопросов
 QUESTIONS_NUM_PROMPT_TAG = '[QUESTIONS_NUM]'
+# Тег в тексте промпта, который нужно заменить на извлечённые чанки
 CHUNKS_PROMPT_TAG = '[CHUNKS]'
 
 
 def parse_questions(text_questions: str) -> list[dict]:
+
     '''
     Парсит текст с вопросами и ответами и возвращает список словарей.
+
+    Параметры:
+        text_questions (str): текст, из которого надо извлечь вопросы
+            Формат:
+                1. Текст вопроса?
+                + Правильный вариант ответа
+                - Неправильный вариант ответа 1
+                - Неправильный вариант ответа 2
+                - Неправильный вариант ответа 3
+
+                2. Текст следующего вопроса?
+                + Правильный вариант ответа
+                - Неправильный вариант ответа 1
+                - Неправильный вариант ответа 2
+                - Неправильный вариант ответа 3
+
+    Возвращаемое значение:
+        questions (list[dict]): вопросы в удобном JSON формате
+            Пример возвращаемого значения:
+                {
+                'question': 'Кто является автором романа «Евгений Онегин»?',
+                'answers': [
+                    {
+                        'answer': 'Александр Пушкин',
+                        'is_correct': true
+                    },
+                    {
+                        'answer': 'Лев Толстой',
+                        'is_correct': false
+                    },
+                    {
+                        'answer': 'Фёдор Достоевский',
+                        'is_correct': false
+                    },
+                    {
+                        'answer': 'Николай Гоголь',
+                        'is_correct': false
+                    }
+                ],
+                'explanation': 'Роман в стихах «Евгений Онегин» написан Александром Сергеевичем Пушкиным и является одним из ключевых произведений русской литературы.'
+                }
     '''
-    print("Начало парсинга вопросов...")
+
+    print('Начало парсинга вопросов...')
     question_header_re = re.compile(r'^\s*\d+\.\s*(.+)')
     answer_re = re.compile(r'^\s*([+-])\s*(.+)')
 
@@ -60,45 +118,57 @@ def parse_questions(text_questions: str) -> list[dict]:
     if current_question:
         questions.append(current_question)
 
-    print(f"Парсинг завершен. Найдено {len(questions)} вопросов.")
+    print(f'Парсинг завершен. Извлечено {len(questions)} вопросов.')
     return questions
 
 
-def clean_text(text: str) -> str:
-    print("Очистка текста...")
-    lines = text.split('\n')
-    cleaned_lines = []
-    paragraph = []
-
-    for line in lines:
-        stripped_line = line.strip()
-        if stripped_line:
-            paragraph.append(stripped_line)
-        elif paragraph:
-            cleaned_lines.append(' '.join(paragraph))
-            paragraph = []
-
-    if paragraph:
-        cleaned_lines.append(' '.join(paragraph))
-
-    print("Текст очищен.")
-    return '\n\n'.join(cleaned_lines)
-
-
 class QuestionsGenerator:
+
+    '''
+    Класс для представления генератора вопросов
+
+    Методы:
+        generate(text: str, questions_num: int) -> list[dict]
+            Генерирует вопросы по текста
+
+
+    Примеры:
+        >>> from generation import QuestionsGenerator
+
+        >>> with open('text.txt', 'r', encoding='utf8') as f:
+        >>>    text = f.read()
+
+        >>> # Генерация 10 вопросов по тексту
+        >>> generator = QuestionsGenerator()
+        >>> questions = generator.generate(text, 10)
+    '''
+
+    _instance = None
+    _initialized = False
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        print("Инициализация QuestionsGenerator...")
+        # Обёртка Singleton Pattern
+        if QuestionsGenerator._initialized:
+            return
+        QuestionsGenerator._initialized = True
+
+        print('Инициализация QuestionsGenerator...')
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        print(f"Используемое устройство: {self.device}")
+        print(f'Используемое устройство: {self.device}')
 
         api_key = os.getenv('DEEPSEEK_API_KEY')
         self.deepseek_client = OpenAI(
             api_key=api_key, base_url='https://api.deepseek.com'
         )
-        print("Deepseek клиент инициализирован.")
+        print('Deepseek клиент инициализирован.')
 
         # Загрузка моделей с указанием устройства
-        print("Загрузка моделей...")
+        print('Загрузка моделей...')
         self.__clustering_model = SentenceTransformer(
             'intfloat/multilingual-e5-large-instruct',
             device=self.device
@@ -107,24 +177,34 @@ class QuestionsGenerator:
             'ai-forever/FRIDA',
             device=self.device
         )
-        print("Модели загружены.")
+        print('Модели загружены.')
 
         # Загрузка промптов один раз при инициализации
-        print("Загрузка промптов...")
+        print('Загрузка промптов...')
         self.__user_prompt_template = self._load_prompt('user_prompt.txt')
         self.__system_prompt = self._load_prompt('system_prompt.txt')
-        print("Промпты загружены.")
-        print("Инициализация завершена.")
+        print('Промпты загружены.')
+        print('Инициализация завершена.')
 
     def _load_prompt(self, filename: str) -> str:
-        print(f"Загрузка промпта из файла: {filename}")
+        
+        '''
+        Метод для загрузки промпта
+
+        Параметры:
+            filename (str): название файла
+
+        Возвращаемое занчение:
+            prompt (str): прочитанный промпт
+        '''
+
         with open(filename, 'r', encoding='utf8') as f:
             return f.read()
 
     def __filter_chunks(self, chunk: str, min_words_in_chunk: int) -> bool:
         result = chunk and len(chunk.split()) > min_words_in_chunk
         if not result:
-            print(f"Чанк отфильтрован: {chunk[:50]}...")
+            print(f'Чанк отфильтрован: {chunk[:50]}...')
         return result
 
     def __get_central_objects(
@@ -133,7 +213,20 @@ class QuestionsGenerator:
             embeddings: np.ndarray,
             objects: np.ndarray
     ) -> np.ndarray:
-        print("Поиск центральных объектов для кластеров...")
+        
+        '''
+        Находит самые центральные объекты в каждом кластере
+
+        Параметры:
+            kmeans (sklearn.KMeans): обученный объект типа sklearn.KMeans
+            embeddings (np.ndarray): векторное представление объектов
+            objects (np.ndarray): сами объекты
+
+        Возвращаемое значение:
+            central_objects: центральные объекты из objects в каждом кластере
+        '''
+        
+        print('Поиск центральных объектов для кластеров...')
         centroids = kmeans.cluster_centers_
         labels = kmeans.labels_
         distances = np.linalg.norm(embeddings - centroids[labels], axis=1)
@@ -142,25 +235,47 @@ class QuestionsGenerator:
             np.where(labels == i)[0][np.argmin(distances[labels == i])]
             for i in range(kmeans.n_clusters)
         ]
-        print(f"Найдено {len(central_indices)} центральных объектов.")
+
         return objects[central_indices]
 
     def __get_questions(self, user_prompt: str) -> list[dict]:
-        print("Генерация вопросов с помощью Deepseek API...")
+
+        '''
+        Отправляет запрос LLM и возвращает вопросы
+
+        Параметры:
+            user_prompt (str): пользовательский запрос
+
+        Возвращаемое значение (list[dict]): извлечённые вопросы
+        '''
+
+        print('Генерация вопросов с помощью Deepseek API...')
         response = self.deepseek_client.chat.completions.create(
             model='deepseek-chat',
             messages=[
-                {"role": "system", "content": self.__system_prompt},
-                {"role": "user", "content": user_prompt},
+                {'role': 'system', 'content': self.__system_prompt},
+                {'role': 'user', 'content': user_prompt},
             ],
             stream=False
         )
-        print("Ответ от API получен.")
+        print('Ответ от API получен.')
+
         return parse_questions(response.choices[0].message.content)
 
     def generate(self, text: str, questions_num: int) -> list[dict]:
-        print(f"\nНачало генерации {questions_num} вопросов...")
-        text = clean_text(text)
+
+        '''
+        Генерирует и возвращает вопросы по тексту
+
+        Параметры:
+            text (str): текст, по которому надо задать вопросы
+            questions_num (int): количество вопросов
+
+        Возвращаемое значение:
+            questions (list[dict]): список вопросов
+        '''
+
+        print(f'Начало генерации {questions_num} вопросов...')
 
         # Деление на чанки
         chunks = text.split('\n')
@@ -170,41 +285,41 @@ class QuestionsGenerator:
 
         chunks = list(filter(lambda chunk: self.__filter_chunks(chunk, min_words_in_chunk), chunks))
         chunks = np.array(chunks)
-        print(f"Получено {len(chunks)} чанков после фильтрации.")
+        print(f'Получено {len(chunks)} чанков после фильтрации.')
 
-        # Используем GPU для вычисления эмбеддингов
-        print("Вычисление эмбеддингов для кластеризации...")
+        # Вычисление эмбеддингов
+        print('Вычисление эмбеддингов для кластеризации...')
         clustering_embeddings = self.__clustering_model.encode(
             chunks,
             convert_to_tensor=True,
             normalize_embeddings=True,
             device=self.device
         ).cpu().numpy()
-        print("Эмбеддинги для кластеризации вычислены.")
+        print('Эмбеддинги для кластеризации вычислены.')
 
         paragraph_num = len(text.split('\n'))
         clusters_num = min(
             MAX_CLUSTERS_NUM,
             max(MIN_CLUSTERS_NUM, int(paragraph_num * DATA_PART))
         )
-        print(f"Количество кластеров: {clusters_num}")
+        print(f'Количество кластеров: {clusters_num}')
 
-        print("Запуск K-means кластеризации...")
+        print('Запуск K-means кластеризации...')
         kmeans = KMeans(n_clusters=clusters_num, random_state=42)
         kmeans.fit(clustering_embeddings)
-        print("Кластеризация завершена.")
+        print('Кластеризация завершена.')
 
         target_chunks = self.__get_central_objects(kmeans, clustering_embeddings, chunks)
-        print("Формирование промпта...")
+        print('Формирование промпта...')
         prompt = self.__user_prompt_template \
             .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
             .replace(CHUNKS_PROMPT_TAG, '\n\n'.join(target_chunks))
 
         questions = self.__get_questions(prompt)
-        print(f"Сгенерировано {len(questions)} вопросов.")
+        print(f'Сгенерировано {len(questions)} вопросов.')
 
-        # Используем GPU для поисковых эмбеддингов
-        print("Вычисление эмбеддингов для поиска...")
+        # Поиск эмбеддингов
+        print('Вычисление эмбеддингов для поиска...')
         doc_embeddings = self.__search_model.encode(
             target_chunks,
             prompt_name='search_document',
@@ -215,38 +330,37 @@ class QuestionsGenerator:
             prompt_name='search_query',
             device=self.device
         )
-        print("Эмбеддинги для поиска вычислены.")
+        print('Эмбеддинги для поиска вычислены.')
 
-        # Используем GPU для FAISS, если доступно
-        print("Настройка FAISS индекса...")
+        print('Настройка FAISS индекса...')
         # Создаем FAISS-индекс по косинусному расстоянию (через скалярное произведение)
         index = faiss.IndexFlatIP(doc_embeddings.shape[1])
         # Добавляем эмбеддинги в индекс
         index.add(doc_embeddings)
-        print("FAISS индекс готов.")
+        print('FAISS индекс готов.')
 
-        print("Поиск соответствий вопросов и чанков...")
+        print('Поиск соответствий вопросов и чанков...')
         _, indices = index.search(query_embeddings, 1)
 
         for question, explanation in zip(questions, target_chunks[indices]):
             question['explanation'] = str(explanation[0])
 
-        print("Генерация вопросов завершена.\n")
+        print('Генерация вопросов завершена.\n')
         return questions
 
 
 if __name__ == '__main__':
-    print("Запуск тестового сценария...")
+    print('Запуск тестового сценария...')
     with open('test_data/markdown.md', 'r', encoding='utf8') as f:
         text = f.read()
 
     generator = QuestionsGenerator()
     questions = generator.generate(text, 10)
 
-    print("Результат:")
+    print('Результат:')
     for i, q in enumerate(questions, 1):
-        print(f"\nВопрос {i}: {q['question']}")
-        print("Варианты ответов:")
+        print(f'\nВопрос {i}: {q['question']}')
+        print('Варианты ответов:')
         for ans in q['answers']:
-            print(f"  {'[+]' if ans['is_correct'] else '[ ]'} {ans['answer']}")
-        print(f"Объяснение: {q['explanation']}")
+            print(f'  {'[+]' if ans['is_correct'] else '[ ]'} {ans['answer']}')
+        print(f'Объяснение: {q['explanation']}')
