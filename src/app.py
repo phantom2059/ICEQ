@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from flask import Flask, render_template, request, jsonify, send_file
 import os
 import json
@@ -15,20 +14,6 @@ question_generator = QuestionsGenerator()
 @app.route('/')
 def index():
     return render_template('templates/index.html')
-=======
-from flask import Flask, render_template, request, jsonify
-import os
-from generation import QuestionsGenerator
-import time
-import json
-
-app = Flask(__name__)
-generator = QuestionsGenerator()
-
-@app.route('/')
-def index():
-    return render_template('index.html')
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
 @app.route('/generate', methods=['POST'])
 def generate_questions():
@@ -38,7 +23,6 @@ def generate_questions():
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
 
-<<<<<<< HEAD
         # Get advanced settings if provided
         settings = data.get('settings', {})
 
@@ -47,20 +31,12 @@ def generate_questions():
 
         # Для подсчета качества можно использовать функцию из генератора или вычислить здесь
         quality_score = 85  # Можно заменить на вычисляемое значение
-=======
-        # Generate questions - now returns already formatted questions
-        formatted_questions = generator.generate(text_content, questions_num)
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
         # Return the questions to the frontend
         return jsonify({
             'status': 'success',
-<<<<<<< HEAD
             'questions': formatted_questions,
             'quality': quality_score
-=======
-            'questions': formatted_questions
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         })
     except Exception as e:
         import traceback
@@ -70,7 +46,6 @@ def generate_questions():
             'message': str(e)
         }), 500
 
-<<<<<<< HEAD
 @app.route('/export', methods=['POST'])
 def export_test():
     try:
@@ -226,7 +201,5 @@ def export_txt(questions, user_answers=None):
     )
 
 
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 if __name__ == '__main__':
     app.run(debug=True, port=8080, host='127.0.0.1')
