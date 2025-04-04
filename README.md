@@ -41,11 +41,12 @@ DEEPSEEK_API_KEY=<Your API key>
 ```
 
 ### Python интерфейс
+
 ```python
-from generation import QuestionsGenerator
+from src.generation import QuestionsGenerator
 
 with open('text.txt', 'r', encoding='utf8') as f:
-   text = f.read()
+    text = f.read()
 
 # Генерация 10 вопросов по тексту
 generator = QuestionsGenerator()
