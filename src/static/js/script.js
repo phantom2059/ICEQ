@@ -5,10 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const loadTestScreen = document.getElementById('load-test-screen');
     const loadingScreen = document.getElementById('loading-screen');
     const testPreviewScreen = document.getElementById('test-preview-screen');
-<<<<<<< HEAD
     const editQuestionsScreen = document.getElementById('edit-questions-screen');
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     const questionScreen = document.getElementById('question-screen');
     const explanationScreen = document.getElementById('explanation-screen');
     const resultsScreen = document.getElementById('results-screen');
@@ -31,13 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const questionNumber = document.getElementById('question-number');
     const questionSlider = document.getElementById('question-slider');
 
-<<<<<<< HEAD
     // Character counter and file size elements
     const charCounter = document.getElementById('char-counter');
     const fileSize = document.getElementById('file-size');
 
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     // Load Test Screen Elements
     const backToMainFromLoad = document.getElementById('back-to-main-from-load');
     const readyTestUpload = document.getElementById('ready-test-upload');
@@ -50,17 +44,13 @@ document.addEventListener('DOMContentLoaded', function () {
     // Loading Screen Elements
     const loaderProgress = document.querySelector('.loader-progress');
     const loadingLog = document.getElementById('loading-log');
-<<<<<<< HEAD
     const adContainer = document.getElementById('ad-container');
     const adPremiumBtn = document.getElementById('ad-premium-btn');
     const loadingStages = document.querySelectorAll('.loading-stage');
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Test Preview Screen Elements
     const backToCreateTest = document.getElementById('back-to-create-test');
     const previewQuestionCount = document.getElementById('preview-question-count');
-<<<<<<< HEAD
     const questionsList = document.getElementById('questions-list');
     const downloadTestBtn = document.getElementById('download-test-btn');
     const startTestBtn = document.getElementById('start-test-btn');
@@ -73,14 +63,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const backToPreview = document.getElementById('back-to-preview');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const saveEditBtn = document.getElementById('save-edit-btn');
-=======
-    const previewNumber = document.getElementById('preview-number');
-    const previewQuestionText = document.getElementById('preview-question-text');
-    const previewAnswers = document.getElementById('preview-answers');
-    const questionsAccordion = document.getElementById('questions-accordion');
-    const downloadTestBtn = document.getElementById('download-test-btn');
-    const startTestBtn = document.getElementById('start-test-btn');
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Question Screen Elements
     const questionCount = document.getElementById('question-count');
@@ -101,17 +83,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const reviewAnswersBtn = document.getElementById('review-answers-btn');
     const exportResultsBtn = document.getElementById('export-results-btn');
     const restartBtn = document.getElementById('restart-btn');
-<<<<<<< HEAD
     const backToMainBtn = document.getElementById('back-to-main-btn');
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Review Answers Screen Elements
     const reviewContainer = document.getElementById('review-container');
     const filterButtons = document.querySelectorAll('.filter-btn');
     const searchQuestions = document.getElementById('search-questions');
     const backToResultsBtn = document.getElementById('back-to-results-btn');
-<<<<<<< HEAD
     const exportTxtBtn = document.getElementById('export-txt-btn');
 
     // Export Modal Elements
@@ -120,13 +98,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const exportJsonBtn = document.getElementById('export-json-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
     const exportTxtResultsBtn = document.getElementById('export-txt-results-btn');
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Theme Toggle
     const themeSwitch = document.getElementById('theme-switch');
 
-<<<<<<< HEAD
     // Premium Mode Elements
     const premiumBtn = document.getElementById('premium-btn');
     const premiumModal = document.getElementById('premium-modal');
@@ -141,8 +116,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Logo for navigation
     const logoHome = document.getElementById('logo-home');
 
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     // Quiz state
     let quizData = [];
     let currentQuestion = 0;
@@ -150,7 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let selectedOption = null;
     let correctCount = 0;
     let showExplanationsMode = true;
-<<<<<<< HEAD
     let testQuality = 85; // Default quality
 
     // Premium state
@@ -183,8 +155,6 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         updateFreeTestsLimit();
     }
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Load theme from localStorage
     const savedTheme = localStorage.getItem('quizTheme');
@@ -204,7 +174,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-<<<<<<< HEAD
     // Character counter
     textContent.addEventListener('input', function() {
         const charCount = this.value.length;
@@ -297,8 +266,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     // ==== MAIN SCREEN EVENTS ====
     createTestBtn.addEventListener('click', () => showScreen(createTestScreen));
     loadTestBtn.addEventListener('click', () => showScreen(loadTestScreen));
@@ -397,15 +364,12 @@ document.addEventListener('DOMContentLoaded', function () {
     backToCreateTest.addEventListener('click', () => showScreen(createTestScreen));
     downloadTestBtn.addEventListener('click', downloadTest);
     startTestBtn.addEventListener('click', startQuiz);
-<<<<<<< HEAD
     editQuestionsBtn.addEventListener('click', editQuestions);
 
     // ==== EDIT QUESTIONS SCREEN EVENTS ====
     backToPreview.addEventListener('click', () => showScreen(testPreviewScreen));
     cancelEditBtn.addEventListener('click', () => showScreen(testPreviewScreen));
     saveEditBtn.addEventListener('click', saveEditedQuestions);
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // ==== QUESTION SCREEN EVENTS ====
     answerBtn.addEventListener('click', submitAnswer);
@@ -416,7 +380,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // ==== RESULTS SCREEN EVENTS ====
     reviewAnswersBtn.addEventListener('click', reviewAnswers);
-<<<<<<< HEAD
     exportResultsBtn.addEventListener('click', function() {
         exportModal.classList.add('active');
     });
@@ -430,13 +393,6 @@ document.addEventListener('DOMContentLoaded', function () {
     exportTxtBtn.addEventListener('click', function() {
         exportToTxt();
     });
-=======
-    exportResultsBtn.addEventListener('click', exportResults);
-    restartBtn.addEventListener('click', restartQuiz);
-
-    // ==== REVIEW ANSWERS SCREEN EVENTS ====
-    backToResultsBtn.addEventListener('click', () => showScreen(resultsScreen));
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
     // Review filters
     filterButtons.forEach(button => {
@@ -477,7 +433,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const file = fileUpload.files[0];
         if (file) {
             fileName.textContent = file.name;
-<<<<<<< HEAD
 
             // File size check for free mode
             if (!isPremiumMode && file.size > 50 * 1024) { // 50 KB
@@ -500,11 +455,6 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             fileName.textContent = "";
             if (fileSize) fileSize.querySelector('span').textContent = "0";
-=======
-            processFile(file);
-        } else {
-            fileName.textContent = "";
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         }
     }
 
@@ -585,7 +535,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const reader = new FileReader();
             reader.onload = function(e) {
                 textContent.value = e.target.result;
-<<<<<<< HEAD
 
                 // Check character limit for free mode
                 if (!isPremiumMode && e.target.result.length > 10000) {
@@ -598,8 +547,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     charCounter.classList.remove('limit-reached');
                     generateBtn.disabled = false;
                 }
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
             };
             reader.onerror = function() {
                 alert("Ошибка чтения файла.");
@@ -615,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     mammoth.extractRawText({arrayBuffer: arrayBuffer})
                         .then(function(result) {
                             textContent.value = result.value;
-<<<<<<< HEAD
 
                             // Check character limit for free mode
                             if (!isPremiumMode && result.value.length > 10000) {
@@ -628,8 +574,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                 charCounter.classList.remove('limit-reached');
                                 generateBtn.disabled = false;
                             }
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
                         })
                         .catch(function(error) {
                             console.error(error);
@@ -659,7 +603,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         function processPDFPages(pageNumber) {
                             if (pageNumber > maxPages) {
                                 textContent.value = allTextContent;
-<<<<<<< HEAD
 
                                 // Check character limit for free mode
                                 if (!isPremiumMode && allTextContent.length > 10000) {
@@ -672,8 +615,6 @@ document.addEventListener('DOMContentLoaded', function () {
                                     charCounter.classList.remove('limit-reached');
                                     generateBtn.disabled = false;
                                 }
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
                                 return;
                             }
 
@@ -708,25 +649,18 @@ document.addEventListener('DOMContentLoaded', function () {
     function startGeneration() {
         const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
 
-<<<<<<< HEAD
         // Check if text is empty
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         if (activeTab === 'text' && textContent.value.trim() === '') {
             alert('Пожалуйста, введите текст для генерации теста.');
             return;
         }
 
-<<<<<<< HEAD
         // Check if file is selected
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         if (activeTab === 'file' && !fileUpload.files[0]) {
             alert('Пожалуйста, выберите файл для генерации теста.');
             return;
         }
 
-<<<<<<< HEAD
         // Check free mode tests limit
         if (!isPremiumMode && testsCreatedToday >= 5) {
             alert('Вы достигли лимита бесплатных тестов на сегодня (5/5). Перейдите на Премиум для неограниченного создания тестов.');
@@ -769,15 +703,6 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('lastTestDate', new Date().toDateString());
             updateFreeTestsLimit();
         }
-=======
-        showScreen(loadingScreen);
-        loadingLog.innerHTML = ''; // Clear previous logs
-        loaderProgress.textContent = '0%';
-        logMessage("Начинаем обработку...");
-
-        // Simulate progress
-        simulateGenerationProgress();
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
         if (activeTab === 'text') {
             generateFromText(textContent.value);
@@ -788,7 +713,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-<<<<<<< HEAD
     // Realistic progress bar
     function startRealisticProgress() {
         let progress = 0;
@@ -895,23 +819,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         });
-=======
-    // Simulate generation progress
-    function simulateGenerationProgress() {
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.floor(Math.random() * 5) + 1;
-            if (progress > 100) progress = 100;
-            loaderProgress.textContent = `${progress}%`;
-
-            if (progress === 100) clearInterval(interval);
-        }, 300);
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     }
 
     // Generate questions from text
     function generateFromText(textContent) {
-<<<<<<< HEAD
         // Show ad in free mode
         if (!isPremiumMode) {
             adContainer.style.display = 'block';
@@ -920,27 +831,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // In a real project, this would be an API request
-=======
-        logMessage("Анализ текста...");
-
-        setTimeout(() => {
-            logMessage("Извлечение ключевых концепций...");
-        }, 1000);
-
-        setTimeout(() => {
-            logMessage("Формирование вопросов...");
-        }, 2000);
-
-        setTimeout(() => {
-            logMessage("Генерация вариантов ответов...");
-        }, 3000);
-
-        setTimeout(() => {
-            logMessage("Проверка качества теста...");
-        }, 4000);
-
-        // В реальном проекте здесь будет запрос к API
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         fetch('/generate', {
             method: 'POST',
             headers: {
@@ -964,10 +854,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     quizData = data.questions;
                     previewQuestionCount.textContent = quizData.length;
-<<<<<<< HEAD
                     updateQualityIndicator(testQuality);
-=======
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
                     currentQuestion = 0;
                     userAnswers = Array(quizData.length).fill(null);
@@ -1046,15 +933,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 ];
 
                 logMessage("Создано 5 тестовых вопросов");
-<<<<<<< HEAD
 
                 quizData = mockQuestions;
                 previewQuestionCount.textContent = quizData.length;
                 updateQualityIndicator(testQuality);
-=======
-                quizData = mockQuestions;
-                previewQuestionCount.textContent = quizData.length;
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
                 currentQuestion = 0;
                 userAnswers = Array(quizData.length).fill(null);
@@ -1068,7 +950,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-<<<<<<< HEAD
     // Update quality indicator
     function updateQualityIndicator(quality) {
         qualityFill.style.width = `${quality}%`;
@@ -1135,141 +1016,10 @@ document.addEventListener('DOMContentLoaded', function () {
     function downloadTest() {
         const testData = {
             title: 'ICEQ Тест',
-=======
-    // Load ready test from file
-    function loadReadyTest() {
-        if (!readyTestUpload.files.length) {
-            alert('Пожалуйста, выберите файл теста для загрузки.');
-            return;
-        }
-
-        const file = readyTestUpload.files[0];
-        const reader = new FileReader();
-
-        showScreen(loadingScreen);
-        loadingLog.innerHTML = '';
-        logMessage(`Загрузка готового теста: ${file.name}`);
-
-        reader.onload = function(e) {
-            try {
-                const content = e.target.result;
-                const testData = JSON.parse(content);
-
-                if (!testData.questions || !Array.isArray(testData.questions)) {
-                    throw new Error('Некорректный формат файла теста');
-                }
-
-                logMessage('Проверка структуры теста...');
-
-                setTimeout(() => {
-                    logMessage('Тест успешно загружен');
-                    quizData = testData.questions;
-                    showExplanationsMode = showExplanations.checked;
-                    sessionStorage.setItem('showExplanationsMode', showExplanationsMode);
-
-                    currentQuestion = 0;
-                    userAnswers = Array(quizData.length).fill(null);
-                    correctCount = 0;
-
-                    setTimeout(() => {
-                        startQuiz();
-                    }, 1000);
-                }, 1500);
-            } catch (error) {
-                logMessage(`Ошибка загрузки теста: ${error.message}`);
-                setTimeout(() => showScreen(loadTestScreen), 2000);
-            }
-        };
-
-        reader.onerror = function() {
-            logMessage('Ошибка при чтении файла');
-            setTimeout(() => showScreen(loadTestScreen), 2000);
-        };
-
-        reader.readAsText(file);
-    }
-
-    // Prepare the test preview screen
-    function prepareTestPreview() {
-        // Display first question
-        showPreviewQuestion(0);
-
-        // Create accordion list
-        createQuestionsAccordion();
-    }
-
-    // Show preview of a question
-    function showPreviewQuestion(index) {
-        if (!quizData[index]) return;
-
-        const question = quizData[index];
-        previewNumber.textContent = (index + 1);
-        previewQuestionText.textContent = question.question;
-
-        previewAnswers.innerHTML = '';
-
-        question.answers.forEach(answer => {
-            const answerElement = document.createElement('div');
-            answerElement.className = 'preview-answer';
-            if (answer.is_correct) {
-                answerElement.classList.add('correct');
-            }
-            answerElement.textContent = answer.answer;
-            previewAnswers.appendChild(answerElement);
-        });
-    }
-
-    // Create accordion list of questions
-    function createQuestionsAccordion() {
-        questionsAccordion.innerHTML = '';
-
-        quizData.forEach((question, index) => {
-            const accordionItem = document.createElement('div');
-            accordionItem.className = 'accordion-item';
-
-            const header = document.createElement('div');
-            header.className = 'accordion-header';
-            header.textContent = `Вопрос ${index + 1}`;
-            if (index === 0) header.classList.add('active');
-
-            const content = document.createElement('div');
-            content.className = 'accordion-content';
-            if (index === 0) content.classList.add('active');
-
-            const questionPreview = document.createElement('p');
-            questionPreview.textContent = question.question;
-            content.appendChild(questionPreview);
-
-            // Event for clicking on accordion header
-            header.addEventListener('click', () => {
-                document.querySelectorAll('.accordion-header').forEach(h => h.classList.remove('active'));
-                document.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('active'));
-                header.classList.add('active');
-                content.classList.add('active');
-                showPreviewQuestion(index);
-            });
-
-            accordionItem.appendChild(header);
-            accordionItem.appendChild(content);
-            questionsAccordion.appendChild(accordionItem);
-        });
-    }
-
-    // Download test as JSON file
-    function downloadTest() {
-        if (!quizData || quizData.length === 0) {
-            alert("Нет данных для скачивания.");
-            return;
-        }
-
-        const testData = {
-            title: "ICEQ Тест",
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
             dateCreated: new Date().toISOString(),
             questions: quizData
         };
 
-<<<<<<< HEAD
         const json = JSON.stringify(testData, null, 2);
         const blob = new Blob([json], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
@@ -1280,41 +1030,10 @@ document.addEventListener('DOMContentLoaded', function () {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-=======
-        const jsonData = JSON.stringify(testData, null, 2);
-        const blob = new Blob([jsonData], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `ICEQ-Test_${new Date().toLocaleDateString().replace(/\./g, '-')}.json`;
-        document.body.appendChild(a);
-        a.click();
-
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }
-
-    // Export results as PDF or CSV
-    function exportResults() {
-        // This would be implemented with a library like jsPDF or a CSV generator
-        alert("Экспорт результатов будет доступен в следующих версиях");
-    }
-
-    // Display logging message in the loading screen
-    function logMessage(message) {
-        const logEntry = document.createElement('div');
-        logEntry.textContent = message;
-        loadingLog.appendChild(logEntry);
-        loadingLog.scrollTop = loadingLog.scrollHeight;
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     }
 
     // Start the quiz
     function startQuiz() {
-<<<<<<< HEAD
         userAnswers = Array(quizData.length).fill(null);
         currentQuestion = 0;
         correctCount = 0;
@@ -1718,77 +1437,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Check if answer is correct
         const isCorrect = selectedAnswer.is_correct;
-=======
-        currentQuestion = 0;
-        userAnswers = Array(quizData.length).fill(null);
-        correctCount = 0;
-
-        // Check if explanations mode is set
-        showExplanationsMode = sessionStorage.getItem('showExplanationsMode') === 'false' ? false : true;
-
-        showScreen(questionScreen);
-        displayQuestion();
-    }
-
-    // Display current question
-    function displayQuestion() {
-        if (!quizData || !quizData[currentQuestion]) {
-            console.error("Invalid question data", quizData, currentQuestion);
-            logMessage("Ошибка данных вопроса");
-            showScreen(mainScreen);
-            return;
-        }
-
-        const question = quizData[currentQuestion];
-
-        questionCount.textContent = `Вопрос ${currentQuestion + 1} из ${quizData.length}`;
-        questionText.textContent = question.question;
-
-        const progressPercentage = ((currentQuestion + 1) / quizData.length) * 100;
-        progressFill.style.width = `${progressPercentage}%`;
-
-        answersContainer.innerHTML = '';
-        selectedOption = null;
-
-        question.answers.forEach((option, index) => {
-            const answerElement = document.createElement('div');
-            answerElement.className = 'answer-option';
-            answerElement.textContent = option.answer;
-            answerElement.dataset.index = index;
-
-            answerElement.addEventListener('click', () => {
-                document.querySelectorAll('.answer-option').forEach(el => {
-                    el.classList.remove('selected');
-                });
-
-                answerElement.classList.add('selected');
-                selectedOption = option.answer;
-
-                answerBtn.disabled = false;
-            });
-
-            answersContainer.appendChild(answerElement);
-        });
-
-        answerBtn.disabled = true;
-    }
-
-    // Submit the answer
-    function submitAnswer() {
-        if (!selectedOption) return;
-
-        const question = quizData[currentQuestion];
-        const correctAnswerObj = question.answers.find(option => option.is_correct);
-
-        userAnswers[currentQuestion] = selectedOption;
-        const isCorrect = selectedOption === correctAnswerObj.answer;
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
 
         if (isCorrect) {
             correctCount++;
         }
 
-<<<<<<< HEAD
         if (showExplanationsMode) {
             // Show explanation screen
             userAnswerDisplay.textContent = `Ваш ответ: ${selectedAnswer.answer}`;
@@ -1804,25 +1457,12 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             // Go directly to next question
             goToNextQuestion();
-=======
-        // If explanations are disabled, go to next question directly
-        if (!showExplanationsMode) {
-            if (currentQuestion < quizData.length - 1) {
-                currentQuestion++;
-                displayQuestion();
-            } else {
-                showResults();
-            }
-        } else {
-            showAnswerExplanation(correctAnswerObj.answer, isCorrect);
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         }
     }
 
     // Skip the current question
     function skipQuestion() {
         userAnswers[currentQuestion] = null;
-<<<<<<< HEAD
         goToNextQuestion();
     }
 
@@ -1835,52 +1475,12 @@ document.addEventListener('DOMContentLoaded', function () {
             showScreen(questionScreen);
         } else {
             // Quiz finished
-=======
-
-        if (currentQuestion < quizData.length - 1) {
-            currentQuestion++;
-            displayQuestion();
-        } else {
-            showResults();
-        }
-    }
-
-    // Show explanation for the current answer
-    function showAnswerExplanation(correctAnswer, isCorrect) {
-        const question = quizData[currentQuestion];
-
-        showScreen(explanationScreen);
-
-        // Показываем ответ пользователя с соответствующим цветом
-        userAnswerDisplay.textContent = `Ваш ответ: ${selectedOption}`;
-        userAnswerDisplay.className = 'user-answer';
-        userAnswerDisplay.classList.add(isCorrect ? 'correct' : 'incorrect');
-
-        correctAnswerDisplay.textContent = `Правильный ответ: ${correctAnswer}`;
-        explanationText.textContent = question.explanation || "Объяснение отсутствует.";
-
-        if (currentQuestion === quizData.length - 1) {
-            nextBtn.textContent = 'Посмотреть результаты';
-        } else {
-            nextBtn.textContent = 'Далее';
-        }
-    }
-
-    // Go to the next question or results
-    function goToNextQuestion() {
-        if (currentQuestion < quizData.length - 1) {
-            currentQuestion++;
-            showScreen(questionScreen);
-            displayQuestion();
-        } else {
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
             showResults();
         }
     }
 
     // Show quiz results
     function showResults() {
-<<<<<<< HEAD
         score.textContent = `${correctCount}/${quizData.length} (${Math.round((correctCount/quizData.length)*100)}%)`;
         showScreen(resultsScreen);
     }
@@ -1895,33 +1495,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Filter review items
     function filterReviewItems(filter, searchTerm = '') {
-=======
-        showScreen(resultsScreen);
-        score.textContent = `${correctCount}/${quizData.length}`;
-    }
-
-    // Review answers
-    function reviewAnswers() {
-        showScreen(reviewAnswersScreen);
-
-        // Reset filters and search
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
-        searchQuestions.value = '';
-
-        createReviewItems();
-    }
-
-    // Create review items
-    function createReviewItems() {
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
         reviewContainer.innerHTML = '';
 
         quizData.forEach((question, index) => {
             const userAnswer = userAnswers[index];
-<<<<<<< HEAD
             const correctAnswer = question.answers.find(answer => answer.is_correct);
 
             // Check if it matches filter
@@ -2063,116 +1640,5 @@ document.addEventListener('DOMContentLoaded', function () {
         // Scroll to top of the visible screen
         appContainer.scrollTop = 0;
         scrollToActiveScreen();
-=======
-            const correctAnswer = question.answers.find(answer => answer.is_correct).answer;
-            const isCorrect = userAnswer === correctAnswer;
-            const isSkipped = userAnswer === null;
-
-            const reviewItem = document.createElement('div');
-            reviewItem.className = 'review-item';
-            reviewItem.dataset.status = isSkipped ? 'skipped' : (isCorrect ? 'correct' : 'incorrect');
-
-            const questionTitle = document.createElement('h3');
-
-            // Add status icon
-            const statusIcon = document.createElement('span');
-            statusIcon.className = 'status-icon';
-            if (isSkipped) {
-                statusIcon.textContent = '⚠️';
-                statusIcon.classList.add('skipped');
-                statusIcon.title = 'Пропущено';
-            } else if (isCorrect) {
-                statusIcon.textContent = '✓';
-                statusIcon.classList.add('correct');
-                statusIcon.title = 'Верно';
-            } else {
-                statusIcon.textContent = '✗';
-                statusIcon.classList.add('incorrect');
-                statusIcon.title = 'Неверно';
-            }
-
-            questionTitle.appendChild(statusIcon);
-            questionTitle.appendChild(document.createTextNode(` Вопрос ${index + 1}`));
-            reviewItem.appendChild(questionTitle);
-
-            const questionContent = document.createElement('p');
-            questionContent.textContent = question.question;
-            reviewItem.appendChild(questionContent);
-
-            // User Answer
-            const userAnswerElement = document.createElement('div');
-
-            if (isSkipped) {
-                userAnswerElement.className = 'skipped';
-                userAnswerElement.textContent = 'Вопрос был пропущен';
-            } else {
-                userAnswerElement.className = 'review-user-answer';
-                userAnswerElement.classList.add(isCorrect ? 'correct' : 'incorrect');
-                userAnswerElement.textContent = `Ваш ответ: ${userAnswer}`;
-            }
-
-            reviewItem.appendChild(userAnswerElement);
-
-            // Correct Answer
-            const correctAnswerElement = document.createElement('div');
-            correctAnswerElement.className = 'review-correct-answer';
-            correctAnswerElement.textContent = `Правильный ответ: ${correctAnswer}`;
-            reviewItem.appendChild(correctAnswerElement);
-
-            // Explanation
-            if (question.explanation) {
-                const explanationElement = document.createElement('div');
-                explanationElement.className = 'review-explanation';
-                explanationElement.textContent = question.explanation;
-                reviewItem.appendChild(explanationElement);
-            }
-
-            reviewContainer.appendChild(reviewItem);
-        });
-    }
-
-    // Filter review items by status and search term
-    function filterReviewItems(filter, searchTerm = '') {
-        const reviewItems = document.querySelectorAll('.review-item');
-
-        reviewItems.forEach(item => {
-            const itemStatus = item.dataset.status;
-            const questionText = item.querySelector('p').textContent.toLowerCase();
-            const matchesSearch = !searchTerm || questionText.includes(searchTerm);
-
-            if ((filter === 'all' || filter === itemStatus) && matchesSearch) {
-                item.style.display = 'block';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    }
-
-    // Restart the quiz
-    function restartQuiz() {
-        currentQuestion = 0;
-        userAnswers = [];
-        correctCount = 0;
-        showScreen(mainScreen);
-    }
-
-    // Show specific screen and hide others
-    function showScreen(screenToShow) {
-        [
-            mainScreen,
-            createTestScreen,
-            loadTestScreen,
-            loadingScreen,
-            testPreviewScreen,
-            questionScreen,
-            explanationScreen,
-            resultsScreen,
-            reviewAnswersScreen
-        ].forEach(screen => {
-            screen.classList.remove('active');
-        });
-
-        screenToShow.classList.add('active');
->>>>>>> 23c8e2ab076c9268eaf7191f0ed77cfcc56237ac
     }
 });
