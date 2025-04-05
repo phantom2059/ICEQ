@@ -1,6 +1,6 @@
 <p align="center"><img src=img/logo.png width=450px></p>
 
-**ICEQ** (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.
+<p align="center"><b>ICEQ</b> (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.</p>
 
 ## Как работает алгоритм?
 
@@ -43,7 +43,7 @@ DEEPSEEK_API_KEY=<Your API key>
 ### Python интерфейс
 
 ```python
-from src.generation import QuestionsGenerator
+from generation import QuestionsGenerator
 
 with open('text.txt', 'r', encoding='utf8') as f:
     text = f.read()
