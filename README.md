@@ -21,8 +21,7 @@
 
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/droyti46/iceq.git
-   cd iceq
+   git clone https://github.com/phantom2059/ICEQ.git
    ```
 2. Установите зависимости:
    ```bash
