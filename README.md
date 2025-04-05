@@ -43,6 +43,14 @@
 
 3. Центральные объекты каждого кластера передаются на вход ```LLM (DeepSeek)``` при помощи ```API```.
 
+## Обучение модели
+
+<p align="center"><a href="https://www.kaggle.com/datasets/nikitabakutov/iceq-dataset">
+  <img src="https://img.shields.io/badge/Kaggle_Dataset-ICEQ-20BEFF?style=for-the-badge&logo=databricks&logoColor=white" alt="Dataset">
+</a></p>
+
+В рамках проекта была дообучена языковая модель [t-tech/T-lite-it-1.0](https://huggingface.co/t-tech/T-lite-it-1.0) на генерацию вопросов по фрагментам текста
+
 ## Возможности
 - Обработка длинных текстов
 - Генерация вопросов на основе содержимого
