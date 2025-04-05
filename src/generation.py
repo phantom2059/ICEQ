@@ -10,6 +10,7 @@ ICEQ (2025) - Модуль генерации вопросов
     >>> questions = generator.generate(text, 10)
 '''
 
+from typing import Literal
 
 import re
 import os
@@ -21,6 +22,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from peft import PeftModel
 
 load_dotenv()
 
@@ -35,6 +38,8 @@ MAX_CLUSTERS_NUM = 500
 QUESTIONS_NUM_PROMPT_TAG = '[QUESTIONS_NUM]'
 # Тег в тексте промпта, который нужно заменить на извлечённые чанки
 CHUNKS_PROMPT_TAG = '[CHUNKS]'
+
+ICEQ_MODEL_NAME = 'iceq_model'
 
 
 def parse_questions(text_questions: str) -> list[dict]:
@@ -146,26 +151,26 @@ class QuestionsGenerator:
     _instance = None
     _initialized = False
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
+
         return cls._instance
 
-    def __init__(self):
+    def __init__(self, init_llms: list = []):
         # Обёртка Singleton Pattern
         if QuestionsGenerator._initialized:
-            return
+            return None
+        
         QuestionsGenerator._initialized = True
 
         print('Инициализация QuestionsGenerator...')
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print(f'Используемое устройство: {self.device}')
 
-        api_key = os.getenv('DEEPSEEK_API_KEY')
-        self.deepseek_client = OpenAI(
-            api_key=api_key, base_url='https://api.deepseek.com'
-        )
-        print('Deepseek клиент инициализирован.')
+        # Инициализация моделей
+        self.deepseek_client = self.__init_deepseek() if 'deepseek' in init_llms else None
+        self.iceq_model = self.__init_iceq() if 'iceq' in init_llms else None
 
         # Загрузка моделей с указанием устройства
         print('Загрузка моделей...')
@@ -181,12 +186,39 @@ class QuestionsGenerator:
 
         # Загрузка промптов один раз при инициализации
         print('Загрузка промптов...')
-        self.__user_prompt_template = self._load_prompt('user_prompt.txt')
-        self.__system_prompt = self._load_prompt('system_prompt.txt')
+        self.__user_prompt_template = self.__load_prompt('user_prompt.txt')
+        self.__system_prompt = self.__load_prompt('system_prompt.txt')
         print('Промпты загружены.')
         print('Инициализация завершена.')
 
-    def _load_prompt(self, filename: str) -> str:
+    def __init_deepseek(self) -> OpenAI:
+        api_key = os.getenv('DEEPSEEK_API_KEY')
+        self.deepseek_client = OpenAI(
+            api_key=api_key, base_url='https://api.deepseek.com'
+        )
+        print('Deepseek клиент инициализирован.')
+
+    def __init_iceq(self) -> None:
+        model_name = 't-tech/T-lite-it-1.0'
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        base_model = AutoModelForCausalLM.from_pretrained(
+            model_name, 
+            torch_dtype='auto',
+            device_map='auto'
+        )
+
+        model = PeftModel.from_pretrained(
+            base_model,
+            './iceq_model'
+        )
+        model = model.merge_and_unload()
+
+        return {
+            'tokenizer': tokenizer,
+            'model': model
+        }
+
+    def __load_prompt(self, filename: str) -> str:
         
         '''
         Метод для загрузки промпта
@@ -203,8 +235,6 @@ class QuestionsGenerator:
 
     def __filter_chunks(self, chunk: str, min_words_in_chunk: int) -> bool:
         result = chunk and len(chunk.split()) > min_words_in_chunk
-        if not result:
-            print(f'Чанк отфильтрован: {chunk[:50]}...')
         return result
 
     def __get_central_objects(
@@ -238,31 +268,68 @@ class QuestionsGenerator:
 
         return objects[central_indices]
 
-    def __get_questions(self, user_prompt: str) -> list[dict]:
+    def __get_questions(self, llm: str, user_prompt: str) -> list[dict]:
 
         '''
         Отправляет запрос LLM и возвращает вопросы
 
         Параметры:
+            llm (str): LLM для генерация вопросов
             user_prompt (str): пользовательский запрос
 
         Возвращаемое значение (list[dict]): извлечённые вопросы
         '''
 
-        print('Генерация вопросов с помощью Deepseek API...')
-        response = self.deepseek_client.chat.completions.create(
-            model='deepseek-chat',
-            messages=[
-                {'role': 'system', 'content': self.__system_prompt},
-                {'role': 'user', 'content': user_prompt},
-            ],
-            stream=False
-        )
-        print('Ответ от API получен.')
+        match llm:
+            case 'deepseek':
+                print('Генерация вопросов с помощью Deepseek API...')
+                response = self.deepseek_client.chat.completions.create(
+                    model='deepseek-chat',
+                    messages=[
+                        {'role': 'system', 'content': self.__system_prompt},
+                        {'role': 'user', 'content': user_prompt},
+                    ],
+                    stream=False
+                )
+                print('Ответ от API получен.')
 
-        return parse_questions(response.choices[0].message.content)
+                return parse_questions(response.choices[0].message.content)
+            
+            case 'iceq':
+                print('Генерация вопросов с помощью ICEQ Model...')
+                prompt = self.__system_prompt + '\n' + user_prompt
+                messages = [
+                    {'role': 'user', 'content': prompt}
+                ]
 
-    def generate(self, text: str, questions_num: int) -> list[dict]:
+                # Использование Chat Template
+                text = self.iceq_model['tokenizer'].apply_chat_template(
+                    messages,
+                    tokenize=False,
+                    add_generation_prompt=True
+                )
+                model_inputs = self.iceq_model['tokenizer']([text], return_tensors='pt').to(self.device)
+
+                # Генерация вопросов
+                generated_ids = self.iceq_model['model'].generate(
+                    **model_inputs,
+                    max_new_tokens=32_000
+                )
+                generated_ids = [
+                    output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
+                ]
+
+                response = self.iceq_model['tokenizer'].batch_decode(generated_ids, skip_special_tokens=True)[0]
+                print('Ответ от ICEQ Model получен.')
+
+                return parse_questions(response)
+
+    def generate(
+            self, 
+            text: str, 
+            questions_num: int,
+            llm: Literal['deepseek', 'iceq'] = 'deepseek'
+    ) -> list[dict]:
 
         '''
         Генерирует и возвращает вопросы по тексту
@@ -270,10 +337,20 @@ class QuestionsGenerator:
         Параметры:
             text (str): текст, по которому надо задать вопросы
             questions_num (int): количество вопросов
+            llm (Literal['deepseek', 'iceq']), optional:
+                языковая модель, используемая для генерации вопросов
+                    - deepseek: использование DeepSeek API
+                    - iceq: использование локальной предобученной модели
 
         Возвращаемое значение:
             questions (list[dict]): список вопросов
         '''
+
+        if llm == 'deepseek' and self.deepseek_client is None:
+            self.deepseek_client = self.__init_deepseek()
+        
+        if llm == 'iceq' and self.iceq_model is None:
+            self.iceq_model = self.__init_iceq()
 
         print(f'Начало генерации {questions_num} вопросов...')
 
@@ -315,7 +392,7 @@ class QuestionsGenerator:
             .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
             .replace(CHUNKS_PROMPT_TAG, '\n\n'.join(target_chunks))
 
-        questions = self.__get_questions(prompt)
+        questions = self.__get_questions(llm, prompt)
         print(f'Сгенерировано {len(questions)} вопросов.')
 
         # Поиск эмбеддингов
