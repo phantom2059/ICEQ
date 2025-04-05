@@ -2,6 +2,36 @@
 
 <p align="center"><b>ICEQ</b> (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.</p>
 
+<div align="center">
+  <h3>🧠 Core ML & NLP</h3>
+  <p>
+    <img src="https://img.shields.io/badge/PyTorch-2.6.0+cu118-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch">
+    <img src="https://img.shields.io/badge/Transformers-4.50.3-FFD43B?style=for-the-badge&logo=huggingface&logoColor=black" alt="Transformers">
+    <img src="https://img.shields.io/badge/Sentence%20Transformers-4.0.1-FF6F00?style=for-the-badge&logo=huggingface&logoColor=white" alt="SentenceTransformers">
+  </p>
+  
+  <h3>📊 Data & Math</h3>
+  <p>
+    <img src="https://img.shields.io/badge/Numpy-2.2.4-013243?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy">
+    <img src="https://img.shields.io/badge/SciPy-1.15.2-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white" alt="SciPy">
+    <img src="https://img.shields.io/badge/scikit--learn-1.6.1-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-learn">
+  </p>
+  
+  <h3>🌐 Web & API</h3>
+  <p>
+    <img src="https://img.shields.io/badge/Flask-2.2.2-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
+    <img src="https://img.shields.io/badge/OpenAI-1.70.0-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI">
+    <img src="https://img.shields.io/badge/HTTPX-0.28.1-5A9FD4?style=for-the-badge&logo=python&logoColor=white" alt="HTTPX">
+  </p>
+  
+  <h3>🛠 Utilities</h3>
+  <p>
+    <img src="https://img.shields.io/badge/tqdm-4.67.1-FFC107?style=for-the-badge&logo=python&logoColor=black" alt="tqdm">
+    <img src="https://img.shields.io/badge/HuggingFace%20Hub-0.30.1-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" alt="HuggingFace Hub">
+    <img src="https://img.shields.io/badge/PyYAML-6.0.2-FF0000?style=for-the-badge&logo=yaml&logoColor=white" alt="PyYAML">
+  </p>
+</div>
+
 ## Как работает алгоритм?
 
 1. Текст по абзацам разбивается на ```чанки```. Чанки фильтруются и векторизуются.
