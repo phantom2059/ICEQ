@@ -78,6 +78,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const explanationText = document.getElementById('explanation-text');
     const nextBtn = document.getElementById('next-btn');
 
+
+
     // Results Screen Elements
     const score = document.getElementById('score');
     const reviewAnswersBtn = document.getElementById('review-answers-btn');
@@ -115,6 +117,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Logo for navigation
     const logoHome = document.getElementById('logo-home');
+
+    const searchCatalogBtn = document.getElementById('search-catalog-btn');
+    if (searchCatalogBtn) {
+        searchCatalogBtn.addEventListener('click', function() {
+            window.location.href = '/books';
+        });
+    }
 
     // Quiz state
     let quizData = [];
@@ -1625,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Show specific screen and hide others
     function showScreen(screen) {
-        // Hide all screens
+        // Hide all screensa
         [
             mainScreen, createTestScreen, loadTestScreen,
             loadingScreen, testPreviewScreen, editQuestionsScreen, questionScreen,

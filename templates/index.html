@@ -45,6 +45,10 @@
                         <div class="card-icon">📁</div>
                         <div class="card-title">Пройти готовый тест</div>
                     </div>
+                    <div class="action-card" id="search-catalog-btn">
+                        <div class="card-icon">🔍</div>
+                        <div class="card-title">Поиск в каталоге</div>
+                    </div>
                 </div>
 
                 <div id="free-tests-limit" class="limit-notice free-mode-only">
@@ -91,7 +95,7 @@
                         <label for="question-number">Количество вопросов:</label>
                         <input type="number" id="question-number" min="5" max="50" value="10" style="-webkit-appearance: none; -moz-appearance: textfield; margin: 0;">
                         <div class="slider-container">
-                            <input type="range" min="3" max="50" value="10" class="slider" id="question-slider">
+                            <input type="range" min="5" max="50" value="10" class="slider" id="question-slider">
                         </div>
                     </div>
 
@@ -135,7 +139,7 @@
                     <h2>Генерация теста...</h2>
                     <div class="loader-wrapper">
                         <div class="loader"></div>
-                        <div class="loader-progress">%0</div>
+                        <div class="loader-progress">0%</div>
                     </div>
                     <div class="loading-stages">
                         <div class="loading-stage" data-stage="analyze">

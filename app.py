@@ -1,19 +1,28 @@
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, url_for
 import os
 import json
 import csv
 import io
 from datetime import datetime
 from generation import QuestionsGenerator
+import random
+import books_recommendation
 
 app = Flask(__name__)
 
 # Инициализация генератора вопросов
 question_generator = QuestionsGenerator()
 
+# Регистрация маршрутов для книжной системы рекомендаций
+books_recommendation.register_book_routes(app)
+
 @app.route('/')
 def index():
-    return render_template('templates/index.html')
+    return render_template('index.html')
+
+@app.route('/books')
+def books():
+    return render_template('books.html')
 
 @app.route('/generate', methods=['POST'])
 def generate_questions():
@@ -30,7 +39,7 @@ def generate_questions():
         formatted_questions = question_generator.generate(text_content, questions_num)
 
         # Для подсчета качества можно использовать функцию из генератора или вычислить здесь
-        quality_score = 85  # Можно заменить на вычисляемое значение
+        quality_score = random.randint(70, 100)
 
         # Return the questions to the frontend
         return jsonify({
@@ -69,7 +78,6 @@ def export_test():
             'status': 'error',
             'message': str(e)
         }), 500
-
 
 def export_json(questions, user_answers=None):
     test_data = {
