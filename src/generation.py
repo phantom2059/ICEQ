@@ -90,38 +90,40 @@ def parse_questions(text_questions: str) -> list[dict]:
     '''
 
     print('Начало парсинга вопросов...')
-    question_header_re = re.compile(r'^\s*\d+\.\s*(.+)')
-    answer_re = re.compile(r'^\s*([+-])\s*(.+)')
+    # Шаблон для блока: от заголовка вопроса до следующего заголовка или конца текста.
+    # (?ms) позволяет искать многострочно и включать символы новой строки в точку.
+    question_block_pattern = re.compile(r'(?ms)^\s*(\d+)\.\s*(.+?)(?=^\s*\d+\.\s|\Z)')
+    # Шаблон для вариантов ответов (строки, начинающиеся с '+' или '-').
+    answer_line_pattern = re.compile(r'^\s*([+-])\s*(.+)')
 
     questions = []
-    current_question = None
-
-    for line in text_questions.splitlines():
-        line = line.strip()
-        if not line:
+    blocks = question_block_pattern.findall(text_questions)
+    for number, block in blocks:
+        lines = block.splitlines()
+        if not lines:
             continue
 
-        question_match = question_header_re.match(line)
-        if question_match:
-            if current_question:
-                questions.append(current_question)
-            current_question = {
-                'question': question_match.group(1).strip(),
-                'answers': []
-            }
-            continue
-
-        answer_match = answer_re.match(line)
-        if answer_match and current_question is not None:
-            sign, answer_text = answer_match.groups()
-            is_correct = (sign == '+')
-            current_question['answers'].append({
-                'answer': answer_text.strip(),
-                'is_correct': is_correct
+        # Первая строка блока считается текстом вопроса
+        question_text = lines[0].strip()
+        answers = []
+        # Остальные строки блока ищем как варианты ответа
+        for line in lines[1:]:
+            line = line.strip()
+            if not line:
+                continue
+            answer_match = answer_line_pattern.match(line)
+            if answer_match:
+                sign, answer_text = answer_match.groups()
+                answers.append({
+                    'answer': answer_text.strip(),
+                    'is_correct': (sign == '+')
+                })
+        # Добавляем вопрос, если нашлись варианты ответа
+        if answers:
+            questions.append({
+                'question': question_text,
+                'answers': answers
             })
-
-    if current_question:
-        questions.append(current_question)
 
     print(f'Парсинг завершен. Извлечено {len(questions)} вопросов.')
     return questions
@@ -199,19 +201,12 @@ class QuestionsGenerator:
         print('Deepseek клиент инициализирован.')
 
     def __init_iceq(self) -> None:
-        model_name = 't-tech/T-lite-it-1.0'
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        base_model = AutoModelForCausalLM.from_pretrained(
-            model_name, 
+        tokenizer = AutoTokenizer.from_pretrained('t-tech/T-lite-it-1.0')
+        model = AutoModelForCausalLM.from_pretrained(
+            'droyti/ICEQ', 
             torch_dtype='auto',
             device_map='auto'
         )
-
-        model = PeftModel.from_pretrained(
-            base_model,
-            './iceq_model'
-        )
-        model = model.merge_and_unload()
 
         return {
             'tokenizer': tokenizer,
