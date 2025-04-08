@@ -132,6 +132,3 @@ questions = generator.generate(text, 10)
 ## Авторы
 - [Сергей Катцын](https://github.com/phantom2059)
 - [Никита Бакутов](https://github.com/droyti46)
-- [Глеб Петров](https://github.com/KarnnaGQ)
-- [Дмитрий Буря](https://github.com/LostNepis)
-- [Никита Кузнецов](https://github.com/nasfok)
