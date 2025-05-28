@@ -10,7 +10,7 @@ ICEQ (2025) - Модуль генерации вопросов
     >>> questions = generator.generate(text, 10)
 '''
 
-from typing import Literal
+from typing import Literal, List, Dict
 
 import re
 import os
@@ -167,7 +167,16 @@ class QuestionsGenerator:
         QuestionsGenerator._initialized = True
 
         print('Инициализация QuestionsGenerator...')
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        # Принудительно используем CUDA, если она доступна
+        if torch.cuda.is_available():
+            self.device = 'cuda'
+            torch.cuda.empty_cache()
+            # Освобождаем неиспользуемую память
+            if hasattr(torch.cuda, 'reset_peak_memory_stats'):
+                torch.cuda.reset_peak_memory_stats()
+        else:
+            print('ВНИМАНИЕ: CUDA недоступна, используется CPU')
+            self.device = 'cpu'
         print(f'Используемое устройство: {self.device}')
 
         # Инициализация моделей
@@ -201,17 +210,58 @@ class QuestionsGenerator:
         print('Deepseek клиент инициализирован.')
 
     def __init_iceq(self) -> None:
-        tokenizer = AutoTokenizer.from_pretrained('t-tech/T-lite-it-1.0')
-        model = AutoModelForCausalLM.from_pretrained(
-            'droyti/ICEQ', 
-            torch_dtype='auto',
-            device_map='auto'
-        )
+        try:
+            tokenizer = AutoTokenizer.from_pretrained('t-tech/T-lite-it-1.0')
+            
+            # Пробуем загрузить на GPU с квантизацией
+            if self.device == 'cuda':
+                try:
+                    print('Попытка загрузки модели ICEQ на GPU с квантизацией...')
+                    model = AutoModelForCausalLM.from_pretrained(
+                        'droyti/ICEQ', 
+                        torch_dtype=torch.float16,
+                        device_map='auto',
+                        low_cpu_mem_usage=True,
+                        load_in_8bit=True,  # Квантизация в 8 бит
+                        trust_remote_code=True
+                    )
+                    print('Модель ICEQ успешно загружена на GPU с квантизацией')
+                except Exception as e:
+                    print(f'Ошибка загрузки с квантизацией: {e}')
+                    try:
+                        print('Попытка загрузки модели ICEQ на GPU без квантизации...')
+                        model = AutoModelForCausalLM.from_pretrained(
+                            'droyti/ICEQ', 
+                            torch_dtype=torch.float16,
+                            device_map='auto',
+                            low_cpu_mem_usage=True
+                        )
+                        print('Модель ICEQ успешно загружена на GPU')
+                    except torch.cuda.OutOfMemoryError:
+                        print('Недостаточно памяти GPU для модели ICEQ, загружаем на CPU...')
+                        torch.cuda.empty_cache()
+                        model = AutoModelForCausalLM.from_pretrained(
+                            'droyti/ICEQ', 
+                            torch_dtype=torch.float32,
+                            device_map='cpu',
+                            low_cpu_mem_usage=True
+                        )
+                        print('Модель ICEQ загружена на CPU')
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
+                    'droyti/ICEQ', 
+                    torch_dtype=torch.float32,
+                    device_map='cpu',
+                    low_cpu_mem_usage=True
+                )
 
-        return {
-            'tokenizer': tokenizer,
-            'model': model
-        }
+            return {
+                'tokenizer': tokenizer,
+                'model': model
+            }
+        except Exception as e:
+            print(f'Ошибка при загрузке модели ICEQ: {e}')
+            return None
 
     def __load_prompt(self, filename: str) -> str:
         
@@ -292,6 +342,9 @@ class QuestionsGenerator:
             
             case 'iceq':
                 print('Генерация вопросов с помощью ICEQ Model...')
+                if self.iceq_model is None:
+                    raise ValueError("Модель ICEQ не загружена")
+                
                 prompt = self.__system_prompt + '\n' + user_prompt
                 messages = [
                     {'role': 'user', 'content': prompt}
@@ -303,7 +356,11 @@ class QuestionsGenerator:
                     tokenize=False,
                     add_generation_prompt=True
                 )
-                model_inputs = self.iceq_model['tokenizer']([text], return_tensors='pt').to(self.device)
+                
+                # Определяем устройство модели
+                model_device = next(self.iceq_model['model'].parameters()).device
+                
+                model_inputs = self.iceq_model['tokenizer']([text], return_tensors='pt').to(model_device)
 
                 # Генерация вопросов
                 generated_ids = self.iceq_model['model'].generate(
@@ -319,11 +376,118 @@ class QuestionsGenerator:
 
                 return parse_questions(response)
 
+    def __generate_iceq(self, text: str, num_questions: int) -> List[Dict]:
+        if not self.iceq_model:
+            return []
+        
+        tokenizer = self.iceq_model['tokenizer']
+        model = self.iceq_model['model']
+        
+        # Сокращенный промпт для ускорения
+        prompt = f"""Создай {num_questions} тестовых вопроса по тексту:
+
+{text[:800]}  # Ограничиваем длину текста
+
+Формат ответа:
+1. Вопрос: [вопрос]
+Варианты: A) [вариант] B) [вариант] C) [вариант] D) [вариант]
+Ответ: [буква]
+
+2. Вопрос: [вопрос]
+Варианты: A) [вариант] B) [вариант] C) [вариант] D) [вариант]
+Ответ: [буква]"""
+
+        try:
+            inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024)
+            
+            # Отправляем на то же устройство, что и модель
+            device = next(model.parameters()).device
+            inputs = {k: v.to(device) for k, v in inputs.items()}
+            
+            # Оптимизированные параметры генерации
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs,
+                    max_new_tokens=300,  # Уменьшено с 500
+                    do_sample=False,     # Детерминированная генерация (быстрее)
+                    pad_token_id=tokenizer.eos_token_id,
+                    eos_token_id=tokenizer.eos_token_id,
+                    num_beams=1,         # Без beam search (быстрее)
+                    early_stopping=True
+                )
+            
+            generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            response = generated_text[len(prompt):].strip()
+            
+            return self.__parse_iceq_response(response, num_questions)
+            
+        except Exception as e:
+            print(f"Ошибка при генерации с ICEQ: {e}")
+            return []
+
+    def __parse_iceq_response(self, response: str, num_questions: int) -> List[Dict]:
+        """Парсит ответ от модели ICEQ в упрощенном формате"""
+        questions = []
+        
+        # Ищем паттерны вопросов
+        question_pattern = r'(\d+)\.\s*Вопрос:\s*(.+?)(?=\d+\.\s*Вопрос:|$)'
+        matches = re.findall(question_pattern, response, re.DOTALL | re.IGNORECASE)
+        
+        for match in matches:
+            question_num, question_block = match
+            
+            # Извлекаем текст вопроса
+            lines = question_block.strip().split('\n')
+            question_text = lines[0].strip()
+            
+            # Ищем варианты ответов
+            answers = []
+            correct_answer = None
+            
+            for line in lines[1:]:
+                line = line.strip()
+                
+                # Варианты A), B), C), D)
+                variant_match = re.match(r'([ABCD])\)\s*(.+)', line)
+                if variant_match:
+                    letter, text = variant_match.groups()
+                    answers.append({
+                        'answer': text.strip(),
+                        'is_correct': False,
+                        'letter': letter
+                    })
+                
+                # Правильный ответ
+                answer_match = re.match(r'Ответ:\s*([ABCD])', line)
+                if answer_match:
+                    correct_answer = answer_match.group(1)
+            
+            # Отмечаем правильный ответ
+            if correct_answer and answers:
+                for answer in answers:
+                    if answer['letter'] == correct_answer:
+                        answer['is_correct'] = True
+                        break
+                
+                # Удаляем служебное поле letter
+                for answer in answers:
+                    del answer['letter']
+                
+                questions.append({
+                    'question': question_text,
+                    'answers': answers
+                })
+            
+            if len(questions) >= num_questions:
+                break
+        
+        return questions
+
     def generate(
             self, 
             text: str, 
             questions_num: int,
-            llm: Literal['deepseek', 'iceq'] = 'deepseek'
+            llm: Literal['deepseek', 'iceq'] = 'iceq'
     ) -> list[dict]:
 
         '''
@@ -346,6 +510,8 @@ class QuestionsGenerator:
         
         if llm == 'iceq' and self.iceq_model is None:
             self.iceq_model = self.__init_iceq()
+            if self.iceq_model is None:
+                raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' вместо 'iceq'.")
 
         print(f'Начало генерации {questions_num} вопросов...')
 
@@ -358,6 +524,19 @@ class QuestionsGenerator:
         chunks = list(filter(lambda chunk: self.__filter_chunks(chunk, min_words_in_chunk), chunks))
         chunks = np.array(chunks)
         print(f'Получено {len(chunks)} чанков после фильтрации.')
+
+        # Если чанков слишком мало, используем упрощенную генерацию
+        if len(chunks) < MIN_CLUSTERS_NUM:
+            print(f'Чанков слишком мало ({len(chunks)}), используем упрощенную генерацию...')
+            # Используем оптимизированный метод для ICEQ
+            if llm == 'iceq':
+                return self.__generate_iceq(text, questions_num)
+            else:
+                # Для других LLM используем весь текст
+                prompt = self.__user_prompt_template \
+                    .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
+                    .replace(CHUNKS_PROMPT_TAG, text[:2000])  # Ограничиваем длину
+                return self.__get_questions(llm, prompt)
 
         # Вычисление эмбеддингов
         print('Вычисление эмбеддингов для кластеризации...')
@@ -431,8 +610,9 @@ if __name__ == '__main__':
 
     print('Результат:')
     for i, q in enumerate(questions, 1):
-        print(f'\nВопрос {i}: {q['question']}')
+        print(f'\nВопрос {i}: {q["question"]}')
         print('Варианты ответов:')
         for ans in q['answers']:
-            print(f'  {'[+]' if ans['is_correct'] else '[ ]'} {ans['answer']}')
-        print(f'Объяснение: {q['explanation']}')
+            mark = '[+]' if ans["is_correct"] else '[ ]'
+            print(f'  {mark} {ans["answer"]}')
+        print(f'Объяснение: {q["explanation"]}')

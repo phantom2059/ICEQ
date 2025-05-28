@@ -1,6 +1,3 @@
-<<<<<<< HEAD:app.py
-from flask import Flask, render_template, request, jsonify, send_file, url_for
-=======
 '''
 ICEQ (2025) - Веб-интерфейс приложения
 
@@ -13,7 +10,6 @@ ICEQ (2025) - Веб-интерфейс приложения
     >>> python app.py
 '''
 
->>>>>>> e25ce247ffa042d08f5139b3bb8fcb261bbb29aa:src/app.py
 import os
 import json
 import csv
@@ -24,23 +20,15 @@ from flask import Flask, render_template, request, jsonify, send_file
 
 from generation import QuestionsGenerator
 import random
-import books_recommendation
 
 app = Flask(__name__)
 
 # Инициализация генератора вопросов
 question_generator = QuestionsGenerator()
 
-# Регистрация маршрутов для книжной системы рекомендаций
-books_recommendation.register_book_routes(app)
-
 @app.route('/')
 def index():
     return render_template('index.html')
-
-@app.route('/books')
-def books():
-    return render_template('books.html')
 
 @app.route('/generate', methods=['POST'])
 def generate_questions():
@@ -56,14 +44,10 @@ def generate_questions():
         # Используем генератор вопросов
         formatted_questions = question_generator.generate(text_content, questions_num)
 
-        # Для подсчета качества можно использовать функцию из генератора или вычислить здесь
-        quality_score = random.randint(70, 100)
-
         # Return the questions to the frontend
         return jsonify({
             'status': 'success',
-            'questions': formatted_questions,
-            'quality': quality_score
+            'questions': formatted_questions
         })
     except Exception as e:
         import traceback
@@ -113,7 +97,7 @@ def export_json(questions, user_answers=None):
     json_bytes = json_data.encode('utf-8')
 
     # Создаем имя файла
-    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.json'
+    filename = f'ICEQ-Test_{datetime.now().strftime("%Y-%m-%d")}.json'
 
     # Отправляем файл пользователю без сохранения на сервере
     return send_file(
@@ -156,7 +140,7 @@ def export_csv(questions, user_answers=None):
 
     output.seek(0)
 
-    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.csv'
+    filename = f'ICEQ-Test_{datetime.now().strftime("%Y-%m-%d")}.csv'
     return send_file(
         io.BytesIO(output.getvalue().encode('utf-8')),
         as_attachment=True,
@@ -169,7 +153,7 @@ def export_txt(questions, user_answers=None):
     output = io.StringIO()
 
     output.write('ICEQ - Результаты теста\n')
-    output.write(f'Дата: {datetime.now().strftime('%Y-%m-%d')}\n\n')
+    output.write(f'Дата: {datetime.now().strftime("%Y-%m-%d")}\n\n')
 
     if user_answers and len(user_answers) == len(questions):
         # Calculate score
@@ -181,7 +165,7 @@ def export_txt(questions, user_answers=None):
 
         # Write questions with user answers
         for i, question in enumerate(questions):
-            output.write(f'Вопрос {i + 1}: {question['question']}\n')
+            output.write(f'Вопрос {i + 1}: {question["question"]}\n')
 
             user_answer = user_answers[i] if i < len(user_answers) else None
             correct_answer = next((a['answer'] for a in question['answers'] if a['is_correct']), '')
@@ -197,28 +181,28 @@ def export_txt(questions, user_answers=None):
             output.write(f'Статус: {status}\n')
 
             if question.get('explanation'):
-                output.write(f'Объяснение: {question['explanation']}\n')
+                output.write(f'Объяснение: {question["explanation"]}\n')
 
             output.write('\n')
     else:
         # Just write questions and answers without user responses
         for i, question in enumerate(questions):
-            output.write(f'Вопрос {i + 1}: {question['question']}\n')
+            output.write(f'Вопрос {i + 1}: {question["question"]}\n')
 
             for j, answer in enumerate(question['answers']):
                 if answer.get('is_correct'):
-                    output.write(f'✓ {answer['answer']}\n')
+                    output.write(f'✓ {answer["answer"]}\n')
                 else:
-                    output.write(f'- {answer['answer']}\n')
+                    output.write(f'- {answer["answer"]}\n')
 
             if question.get('explanation'):
-                output.write(f'\nОбъяснение: {question['explanation']}\n')
+                output.write(f'\nОбъяснение: {question["explanation"]}\n')
 
             output.write('\n')
 
     output.seek(0)
 
-    filename = f'ICEQ-Test_{datetime.now().strftime('%Y-%m-%d')}.txt'
+    filename = f'ICEQ-Test_{datetime.now().strftime("%Y-%m-%d")}.txt'
     return send_file(
         io.BytesIO(output.getvalue().encode('utf-8')),
         as_attachment=True,
