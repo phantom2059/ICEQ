@@ -14,6 +14,7 @@ from typing import Literal, List, Dict
 
 import re
 import os
+import time
 
 import torch
 import faiss
@@ -24,6 +25,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
+from transformers import BitsAndBytesConfig
 
 load_dotenv()
 
@@ -216,16 +218,24 @@ class QuestionsGenerator:
             # Пробуем загрузить на GPU с квантизацией
             if self.device == 'cuda':
                 try:
-                    print('Попытка загрузки модели ICEQ на GPU с квантизацией...')
+                    print('Попытка загрузки модели ICEQ на GPU с 8-битным квантованием...')
+                    
+                    # Настройка квантования через BitsAndBytesConfig для лучшей производительности
+                    quantization_config = BitsAndBytesConfig(
+                        load_in_8bit=True,
+                        llm_int8_enable_fp32_cpu_offload=True
+                    )
+                    
                     model = AutoModelForCausalLM.from_pretrained(
                         'droyti/ICEQ', 
+                        quantization_config=quantization_config,
                         torch_dtype=torch.float16,
                         device_map='auto',
                         low_cpu_mem_usage=True,
-                        load_in_8bit=True,  # Квантизация в 8 бит
+                        max_memory={0: "10GiB", "cpu": "12GiB"},  # Уменьшаем доступную память для GPU
                         trust_remote_code=True
                     )
-                    print('Модель ICEQ успешно загружена на GPU с квантизацией')
+                    print('Модель ICEQ успешно загружена на GPU с 8-битным квантованием')
                 except Exception as e:
                     print(f'Ошибка загрузки с квантизацией: {e}')
                     try:
@@ -383,10 +393,13 @@ class QuestionsGenerator:
         tokenizer = self.iceq_model['tokenizer']
         model = self.iceq_model['model']
         
-        # Сокращенный промпт для ускорения
-        prompt = f"""Создай {num_questions} тестовых вопроса по тексту:
+        # Улучшенный промпт для более детальных вопросов
+        prompt = f"""Создай {num_questions} сложных вопроса с 4 вариантами ответов по тексту. 
+Каждый вопрос должен быть разного типа: на понимание фактов, на анализ причинно-следственных связей, 
+и на применение знаний.
 
-{text[:800]}  # Ограничиваем длину текста
+Текст:
+{text[:1500]} 
 
 Формат ответа:
 1. Вопрос: [вопрос]
@@ -404,15 +417,18 @@ class QuestionsGenerator:
             device = next(model.parameters()).device
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
-            # Оптимизированные параметры генерации
+            # Улучшенные параметры генерации для 8-битного квантования
             with torch.no_grad():
                 outputs = model.generate(
                     **inputs,
-                    max_new_tokens=300,  # Уменьшено с 500
-                    do_sample=False,     # Детерминированная генерация (быстрее)
+                    max_new_tokens=600,  # Увеличиваем для более подробных ответов
+                    do_sample=True,      # Включаем семплирование для более разнообразных ответов
+                    temperature=0.7,     # Умеренная температура
+                    top_p=0.9,           # Высокий top_p для большего разнообразия
+                    top_k=50,            # Умеренный top_k
+                    num_beams=2,         # Небольшое количество лучей для улучшения качества
                     pad_token_id=tokenizer.eos_token_id,
                     eos_token_id=tokenizer.eos_token_id,
-                    num_beams=1,         # Без beam search (быстрее)
                     early_stopping=True
                 )
             
@@ -504,6 +520,16 @@ class QuestionsGenerator:
         Возвращаемое значение:
             questions (list[dict]): список вопросов
         '''
+        start_time = time.time()
+        
+        # Оценка времени генерации
+        time_estimate = self.estimate_generation_time(text, questions_num, llm)
+        print(f'📊 ОЦЕНКА ВРЕМЕНИ ГЕНЕРАЦИИ:')
+        print(f'   Текст: {time_estimate["word_count"]} слов, {time_estimate["text_length"]} символов')
+        print(f'   Вопросов: {questions_num}')
+        print(f'   Модель: {llm}')
+        print(f'   ⏱️  Ожидаемое время: ~{time_estimate["estimated_seconds"]} сек ({time_estimate["estimated_minutes"]} мин)')
+        print()
 
         if llm == 'deepseek' and self.deepseek_client is None:
             self.deepseek_client = self.__init_deepseek()
@@ -513,7 +539,7 @@ class QuestionsGenerator:
             if self.iceq_model is None:
                 raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' вместо 'iceq'.")
 
-        print(f'Начало генерации {questions_num} вопросов...')
+        print(f'🚀 Начало генерации {questions_num} вопросов...')
 
         # Деление на чанки
         chunks = text.split('\n')
@@ -530,13 +556,20 @@ class QuestionsGenerator:
             print(f'Чанков слишком мало ({len(chunks)}), используем упрощенную генерацию...')
             # Используем оптимизированный метод для ICEQ
             if llm == 'iceq':
-                return self.__generate_iceq(text, questions_num)
+                questions = self.__generate_iceq(text, questions_num)
             else:
                 # Для других LLM используем весь текст
                 prompt = self.__user_prompt_template \
                     .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
                     .replace(CHUNKS_PROMPT_TAG, text[:2000])  # Ограничиваем длину
-                return self.__get_questions(llm, prompt)
+                questions = self.__get_questions(llm, prompt)
+            
+            # Вычисляем и выводим фактическое время
+            actual_time = time.time() - start_time
+            print(f'✅ Упрощенная генерация завершена за {actual_time:.1f} сек')
+            print(f'   Сгенерировано {len(questions)} вопросов')
+            print(f'   Разница с оценкой: {actual_time - time_estimate["estimated_seconds"]:.1f} сек')
+            return questions
 
         # Вычисление эмбеддингов
         print('Вычисление эмбеддингов для кластеризации...')
@@ -596,8 +629,54 @@ class QuestionsGenerator:
         for question, explanation in zip(questions, target_chunks[indices]):
             question['explanation'] = str(explanation[0])
 
-        print('Генерация вопросов завершена.\n')
+        # Финальная статистика по времени
+        actual_time = time.time() - start_time
+        print()
+        print(f'🎉 ГЕНЕРАЦИЯ ЗАВЕРШЕНА!')
+        print(f'   ⏱️  Фактическое время: {actual_time:.1f} сек ({actual_time/60:.1f} мин)')
+        print(f'   📈 Ожидалось: {time_estimate["estimated_seconds"]} сек')
+        print(f'   📊 Разница: {actual_time - time_estimate["estimated_seconds"]:.1f} сек')
+        print(f'   📝 Результат: {len(questions)} вопросов')
+        print()
+        
         return questions
+
+    def estimate_generation_time(self, text: str, questions_num: int, llm: str = 'iceq') -> dict:
+        """
+        Оценивает примерное время генерации вопросов
+        
+        Параметры:
+            text (str): текст для анализа
+            questions_num (int): количество вопросов
+            llm (str): используемая модель
+            
+        Возвращает:
+            dict: информация о времени генерации
+        """
+        text_length = len(text)
+        word_count = len(text.split())
+        
+        if llm == 'iceq':
+            # Базовое время для ICEQ модели с 8-битным квантованием
+            base_time_per_question = 3.5  # секунд на вопрос
+            text_factor = min(text_length / 1000, 3.0)  # до 3x за длинный текст
+            complexity_factor = 1 + (questions_num * 0.1)  # усложнение с количеством
+            
+            estimated_time = (base_time_per_question * questions_num * text_factor * complexity_factor)
+        else:
+            # Для DeepSeek API
+            base_time_per_question = 2.0  # быстрее через API
+            text_factor = min(text_length / 1500, 2.0)
+            estimated_time = base_time_per_question * questions_num * text_factor
+        
+        return {
+            'estimated_seconds': int(estimated_time),
+            'estimated_minutes': round(estimated_time / 60, 1),
+            'text_length': text_length,
+            'word_count': word_count,
+            'questions_count': questions_num,
+            'model': llm
+        }
 
 
 if __name__ == '__main__':

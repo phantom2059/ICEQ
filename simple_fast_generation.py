@@ -165,4 +165,4 @@ if __name__ == "__main__":
             mark = "✓" if answer['is_correct'] else "✗"
             print(f"  {j}. {answer['answer']} {mark}")
         if q.get('explanation'):
-            print(f"  Объяснение: {q['explanation']}")
+            print(f"  Объяснение: {q['explanation']}") 

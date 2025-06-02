@@ -15,6 +15,7 @@ import json
 import csv
 import io
 from datetime import datetime
+import time
 
 from flask import Flask, render_template, request, jsonify, send_file
 
@@ -30,8 +31,31 @@ question_generator = QuestionsGenerator()
 def index():
     return render_template('index.html')
 
+@app.route('/estimate-time', methods=['POST'])
+def estimate_time():
+    try:
+        # Get data from request
+        data = request.get_json()
+        text_content = data.get('text', '')
+        questions_num = int(data.get('questionNumber', 10))
+        
+        # Получаем оценку времени
+        time_estimate = question_generator.estimate_generation_time(text_content, questions_num, 'iceq')
+        
+        return jsonify({
+            'status': 'success',
+            'estimate': time_estimate
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/generate', methods=['POST'])
 def generate_questions():
+    start_time = time.time()
+    
     try:
         # Get data from request
         data = request.get_json()
@@ -41,13 +65,28 @@ def generate_questions():
         # Get advanced settings if provided
         settings = data.get('settings', {})
 
+        # Получаем оценку времени до начала генерации
+        time_estimate = question_generator.estimate_generation_time(text_content, questions_num, 'iceq')
+
         # Используем генератор вопросов
         formatted_questions = question_generator.generate(text_content, questions_num)
+        
+        # Вычисляем фактическое время
+        actual_time = time.time() - start_time
 
         # Return the questions to the frontend
         return jsonify({
             'status': 'success',
-            'questions': formatted_questions
+            'questions': formatted_questions,
+            'timing': {
+                'estimated_seconds': time_estimate['estimated_seconds'],
+                'actual_seconds': round(actual_time, 1),
+                'difference': round(actual_time - time_estimate['estimated_seconds'], 1),
+                'text_stats': {
+                    'length': time_estimate['text_length'],
+                    'words': time_estimate['word_count']
+                }
+            }
         })
     except Exception as e:
         import traceback

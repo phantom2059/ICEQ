@@ -662,8 +662,9 @@ h2 {
 .quality-indicator {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     margin-bottom: 20px;
-    font-size: 14px;
+    padding: 10px 0;
 }
 
 .quality-bar {
@@ -1563,4 +1564,34 @@ body.premium-mode .premium-btn {
     .loading-stage .stage-icon {
         font-size: 16px;
     }
+}
+
+/* Time estimate styles */
+.time-estimate {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-primary);
+}
+
+.time-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.time-info:last-child {
+    margin-bottom: 0;
+}
+
+.time-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+#estimated-time, #text-stats {
+    font-weight: 600;
+    color: var(--accent-primary);
 }

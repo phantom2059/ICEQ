@@ -78,8 +78,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const explanationText = document.getElementById('explanation-text');
     const nextBtn = document.getElementById('next-btn');
 
-
-
     // Results Screen Elements
     const score = document.getElementById('score');
     const reviewAnswersBtn = document.getElementById('review-answers-btn');
@@ -124,6 +122,10 @@ document.addEventListener('DOMContentLoaded', function () {
             window.location.href = '/books';
         });
     }
+
+    // DOM Elements для новых элементов
+    const estimatedTime = document.getElementById('estimated-time');
+    const textStats = document.getElementById('text-stats');
 
     // Quiz state
     let quizData = [];
@@ -698,28 +700,34 @@ document.addEventListener('DOMContentLoaded', function () {
             stage.classList.remove('active', 'completed');
         });
 
-        // Activate the first stage
-        activateLoadingStage('analyze');
-        logMessage("Начинаем анализ текста...");
+        // Получаем оценку времени перед началом генерации
+        const textToProcess = textContent.value;
+        const numQuestions = parseInt(questionNumber.value) || 10;
+        
+        estimateGenerationTime(textToProcess, numQuestions).then(() => {
+            // Activate the first stage
+            activateLoadingStage('analyze');
+            logMessage("Начинаем анализ текста...");
 
-        // Update progress realistically
-        startRealisticProgress();
+            // Update progress realistically
+            startRealisticProgress();
 
-        // Update tests created counter for free mode
-        if (!isPremiumMode) {
-            testsCreatedToday++;
-            localStorage.setItem('testsCreatedToday', testsCreatedToday.toString());
-            localStorage.setItem('lastTestDate', new Date().toDateString());
-            updateFreeTestsLimit();
-        }
+            // Update tests created counter for free mode
+            if (!isPremiumMode) {
+                testsCreatedToday++;
+                localStorage.setItem('testsCreatedToday', testsCreatedToday.toString());
+                localStorage.setItem('lastTestDate', new Date().toDateString());
+                updateFreeTestsLimit();
+            }
 
-        if (activeTab === 'text') {
-            generateFromText(textContent.value);
-        } else {
-            const file = fileUpload.files[0];
-            logMessage(`Обработка файла: ${file.name}`);
-            generateFromText(textContent.value);
-        }
+            if (activeTab === 'text') {
+                generateFromText(textToProcess);
+            } else {
+                const file = fileUpload.files[0];
+                logMessage(`Обработка файла: ${file.name}`);
+                generateFromText(textToProcess);
+            }
+        });
     }
 
     // Realistic progress bar
@@ -833,11 +841,14 @@ document.addEventListener('DOMContentLoaded', function () {
     // Generate questions from text
     function generateFromText(textContent) {
         // Show ad in free mode
-        if (!isPremiumMode) {
+        if (!isPremiumMode && adContainer) {
             adContainer.style.display = 'block';
-        } else {
+        } else if (adContainer) {
             adContainer.style.display = 'none';
         }
+
+        // Засекаем время начала генерации
+        const startTime = Date.now();
 
         // In a real project, this would be an API request
         fetch('/generate', {
@@ -858,11 +869,25 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(data => {
             if (data.status === 'success') {
+                const actualTime = (Date.now() - startTime) / 1000; // в секундах
+                
                 if (data.questions && data.questions.length > 0) {
-                    logMessage(`Успешно сгенерировано ${data.questions.length} вопросов`);
+                    logMessage(`✅ Успешно сгенерировано ${data.questions.length} вопросов`);
+                    
+                    // Показываем статистику времени, если доступна
+                    if (data.timing) {
+                        const timing = data.timing;
+                        logMessage(`⏱️ Время генерации: ${timing.actual_seconds} сек (ожидалось ${timing.estimated_seconds} сек)`);
+                        logMessage(`📊 Разница: ${timing.difference > 0 ? '+' : ''}${timing.difference} сек`);
+                        logMessage(`📝 Обработано: ${timing.text_stats.words} слов, ${timing.text_stats.length} символов`);
+                    } else {
+                        logMessage(`⏱️ Время генерации: ${actualTime.toFixed(1)} сек`);
+                    }
 
                     quizData = data.questions;
-                    previewQuestionCount.textContent = quizData.length;
+                    if (previewQuestionCount) {
+                        previewQuestionCount.textContent = quizData.length;
+                    }
                     updateQualityIndicator(testQuality);
 
                     currentQuestion = 0;
@@ -944,7 +969,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 logMessage("Создано 5 тестовых вопросов");
 
                 quizData = mockQuestions;
-                previewQuestionCount.textContent = quizData.length;
+                if (previewQuestionCount) {
+                    previewQuestionCount.textContent = quizData.length;
+                }
                 updateQualityIndicator(testQuality);
 
                 currentQuestion = 0;
@@ -961,8 +988,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Update quality indicator
     function updateQualityIndicator(quality) {
-        qualityFill.style.width = `${quality}%`;
-        qualityScore.textContent = `${quality}%`;
+        if (qualityFill) {
+            qualityFill.style.width = `${quality}%`;
+        }
+        if (qualityScore) {
+            qualityScore.textContent = `${quality}%`;
+        }
     }
 
     // Log messages in loading screen
@@ -1649,5 +1680,47 @@ document.addEventListener('DOMContentLoaded', function () {
         // Scroll to top of the visible screen
         appContainer.scrollTop = 0;
         scrollToActiveScreen();
+    }
+
+    // Получение оценки времени генерации
+    function estimateGenerationTime(textContent, questionNumber) {
+        return fetch('/estimate-time', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: textContent,
+                questionNumber: questionNumber
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const estimate = data.estimate;
+                
+                // Обновляем интерфейс
+                if (estimatedTime) {
+                    estimatedTime.textContent = `~${estimate.estimated_seconds} сек (${estimate.estimated_minutes} мин)`;
+                }
+                
+                if (textStats) {
+                    textStats.textContent = `${estimate.word_count} слов, ${estimate.text_length} символов`;
+                }
+                
+                logMessage(`⏱️ Ожидаемое время генерации: ~${estimate.estimated_seconds} секунд`);
+                logMessage(`📊 Анализ: ${estimate.word_count} слов, ${estimate.text_length} символов`);
+                
+                return estimate;
+            }
+            return null;
+        })
+        .catch(error => {
+            console.error('Ошибка при получении оценки времени:', error);
+            if (estimatedTime) {
+                estimatedTime.textContent = '~10 сек (приблизительно)';
+            }
+            return null;
+        });
     }
 });
