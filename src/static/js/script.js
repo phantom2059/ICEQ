@@ -199,6 +199,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Model selection handler
+    const modelSelect = document.getElementById('model-select');
+
+    if (modelSelect) {
+        modelSelect.addEventListener('change', function() {
+            const modelDescription = document.getElementById('model-description');
+            if (!modelDescription) return; // Элемента нет - ничего не делаем
+
+            const selectedModel = this.value;
+            if (selectedModel === 'iceq') {
+                modelDescription.textContent = 'ICEQ: Временно отключена (потребляет много RAM). Будет использоваться DeepSeek.';
+                modelDescription.style.color = '#ff9800';
+            } else if (selectedModel === 'deepseek') {
+                modelDescription.textContent = 'DeepSeek: Мощная облачная модель с улучшенным качеством генерации';
+                modelDescription.style.color = '';
+            }
+        });
+    }
+
     // Logo navigation
     logoHome.addEventListener('click', function() {
         showScreen(mainScreen);
@@ -839,6 +858,9 @@ document.addEventListener('DOMContentLoaded', function () {
             adContainer.style.display = 'none';
         }
 
+        // Get selected model
+        const selectedModel = document.getElementById('model-select')?.value || 'iceq';
+        
         // In a real project, this would be an API request
         fetch('/generate', {
             method: 'POST',
@@ -847,7 +869,9 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             body: JSON.stringify({
                 text: textContent,
-                questionNumber: parseInt(questionNumber.value) || 10
+                questionNumber: parseInt(questionNumber.value) || 10,
+                model: selectedModel,
+                isPremium: isPremiumMode
             }),
         })
         .then(response => {

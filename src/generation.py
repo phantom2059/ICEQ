@@ -14,6 +14,7 @@ from typing import Literal, List, Dict
 
 import re
 import os
+import asyncio
 
 import torch
 import faiss
@@ -24,6 +25,9 @@ from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
+
+# Импортируем функцию из нашего нового модуля
+from question_generator_api import generate_questions_deepseek
 
 load_dotenv()
 
@@ -90,11 +94,17 @@ def parse_questions(text_questions: str) -> list[dict]:
     '''
 
     print('Начало парсинга вопросов...')
+    print("--- RAW MODEL OUTPUT START ---")
+    print(text_questions)
+    print("--- RAW MODEL OUTPUT END ---")
+    
     # Шаблон для блока: от заголовка вопроса до следующего заголовка или конца текста.
     # (?ms) позволяет искать многострочно и включать символы новой строки в точку.
     question_block_pattern = re.compile(r'(?ms)^\s*(\d+)\.\s*(.+?)(?=^\s*\d+\.\s|\Z)')
     # Шаблон для вариантов ответов (строки, начинающиеся с '+' или '-').
     answer_line_pattern = re.compile(r'^\s*([+-])\s*(.+)')
+    # Шаблон для объяснений (строки, начинающиеся с '!').
+    explanation_line_pattern = re.compile(r'^\s*!\s*(.+)')
 
     questions = []
     blocks = question_block_pattern.findall(text_questions)
@@ -106,23 +116,31 @@ def parse_questions(text_questions: str) -> list[dict]:
         # Первая строка блока считается текстом вопроса
         question_text = lines[0].strip()
         answers = []
+        explanation = ""
         # Остальные строки блока ищем как варианты ответа
         for line in lines[1:]:
             line = line.strip()
             if not line:
                 continue
+            
             answer_match = answer_line_pattern.match(line)
+            explanation_match = explanation_line_pattern.match(line)
+
             if answer_match:
                 sign, answer_text = answer_match.groups()
                 answers.append({
                     'answer': answer_text.strip(),
                     'is_correct': (sign == '+')
                 })
+            elif explanation_match:
+                explanation = explanation_match.group(1).strip()
+
         # Добавляем вопрос, если нашлись варианты ответа
         if answers:
             questions.append({
                 'question': question_text,
-                'answers': answers
+                'answers': answers,
+                'explanation': explanation
             })
 
     print(f'Парсинг завершен. Извлечено {len(questions)} вопросов.')
@@ -211,56 +229,74 @@ class QuestionsGenerator:
 
     def __init_iceq(self) -> None:
         try:
+            print('Загрузка ICEQ с МАКСИМАЛЬНОЙ квантизацией (4-bit)...')
             tokenizer = AutoTokenizer.from_pretrained('t-tech/T-lite-it-1.0')
             
-            # Пробуем загрузить на GPU с квантизацией
+            # Настройки для минимального использования памяти
             if self.device == 'cuda':
                 try:
-                    print('Попытка загрузки модели ICEQ на GPU с квантизацией...')
+                    print('Попытка загрузки ICEQ с 4-bit квантизацией...')
+                    
+                    # Максимальная квантизация для минимального потребления памяти
                     model = AutoModelForCausalLM.from_pretrained(
                         'droyti/ICEQ', 
+                        load_in_4bit=True,  # 4-bit квантизация (самая агрессивная)
+                        bnb_4bit_compute_dtype=torch.float16,  # Вычисления в float16
+                        bnb_4bit_use_double_quant=True,  # Двойная квантизация для экономии памяти
+                        bnb_4bit_quant_type="nf4",  # Нормализованная 4-bit квантизация
                         torch_dtype=torch.float16,
-                        device_map='auto',
-                        low_cpu_mem_usage=True,
-                        load_in_8bit=True,  # Квантизация в 8 бит
-                        trust_remote_code=True
+                        device_map="auto",  # Автоматическое распределение по устройствам
+                        low_cpu_mem_usage=True,  # Экономия CPU памяти
+                        trust_remote_code=True,
+                        max_memory={0: "4GB", "cpu": "2GB"}  # Ограничение памяти
                     )
-                    print('Модель ICEQ успешно загружена на GPU с квантизацией')
+                    print('✅ ICEQ успешно загружена с 4-bit квантизацией (~4-6 ГБ)')
+                    
                 except Exception as e:
-                    print(f'Ошибка загрузки с квантизацией: {e}')
+                    print(f'Ошибка загрузки 4-bit: {e}')
                     try:
-                        print('Попытка загрузки модели ICEQ на GPU без квантизации...')
+                        print('Fallback: попытка загрузки с 8-bit квантизацией...')
                         model = AutoModelForCausalLM.from_pretrained(
                             'droyti/ICEQ', 
+                            load_in_8bit=True,
                             torch_dtype=torch.float16,
-                            device_map='auto',
-                            low_cpu_mem_usage=True
+                            device_map="auto",
+                            low_cpu_mem_usage=True,
+                            trust_remote_code=True,
+                            max_memory={0: "6GB", "cpu": "2GB"}
                         )
-                        print('Модель ICEQ успешно загружена на GPU')
-                    except torch.cuda.OutOfMemoryError:
-                        print('Недостаточно памяти GPU для модели ICEQ, загружаем на CPU...')
+                        print('✅ ICEQ загружена с 8-bit квантизацией')
+                        
+                    except Exception as e2:
+                        print(f'Ошибка 8-bit: {e2}. Загрузка на CPU...')
                         torch.cuda.empty_cache()
                         model = AutoModelForCausalLM.from_pretrained(
                             'droyti/ICEQ', 
-                            torch_dtype=torch.float32,
-                            device_map='cpu',
-                            low_cpu_mem_usage=True
+                            torch_dtype=torch.float16,
+                            device_map="cpu",
+                            low_cpu_mem_usage=True,
+                            trust_remote_code=True
                         )
-                        print('Модель ICEQ загружена на CPU')
+                        print('⚠️ ICEQ загружена на CPU (без квантизации)')
             else:
+                print('CUDA недоступна, загрузка на CPU...')
                 model = AutoModelForCausalLM.from_pretrained(
                     'droyti/ICEQ', 
-                    torch_dtype=torch.float32,
-                    device_map='cpu',
-                    low_cpu_mem_usage=True
+                    torch_dtype=torch.float16,
+                    device_map="cpu",
+                    low_cpu_mem_usage=True,
+                    trust_remote_code=True
                 )
+                print('⚠️ ICEQ загружена на CPU')
 
             return {
                 'tokenizer': tokenizer,
                 'model': model
             }
+            
         except Exception as e:
-            print(f'Ошибка при загрузке модели ICEQ: {e}')
+            print(f'❌ Критическая ошибка при загрузке ICEQ: {e}')
+            print('ICEQ модель недоступна, будет использоваться только DeepSeek')
             return None
 
     def __load_prompt(self, filename: str) -> str:
@@ -313,14 +349,15 @@ class QuestionsGenerator:
 
         return objects[central_indices]
 
-    def __get_questions(self, llm: str, user_prompt: str) -> list[dict]:
+    def __get_questions(self, llm: str, text_content: str, questions_num: int) -> list[dict]:
 
         '''
         Отправляет запрос LLM и возвращает вопросы
 
         Параметры:
             llm (str): LLM для генерация вопросов
-            user_prompt (str): пользовательский запрос
+            text_content (str): Текст для генерации
+            questions_num (int): Количество вопросов
 
         Возвращаемое значение (list[dict]): извлечённые вопросы
         '''
@@ -328,23 +365,32 @@ class QuestionsGenerator:
         match llm:
             case 'deepseek':
                 print('Генерация вопросов с помощью Deepseek API...')
-                response = self.deepseek_client.chat.completions.create(
-                    model='deepseek-chat',
-                    messages=[
-                        {'role': 'system', 'content': self.__system_prompt},
-                        {'role': 'user', 'content': user_prompt},
-                    ],
-                    stream=False
-                )
-                print('Ответ от API получен.')
-
-                return parse_questions(response.choices[0].message.content)
+                try:
+                    # Используем асинхронную функцию
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        response_text = loop.run_until_complete(
+                            generate_questions_deepseek(text_content, questions_num)
+                        )
+                    finally:
+                        loop.close()
+                    
+                    print('Ответ от DeepSeek API получен.')
+                    return parse_questions(response_text)
+                except Exception as e:
+                    print(f'Ошибка при работе с DeepSeek API: {e}')
+                    return []
             
             case 'iceq':
-                print('Генерация вопросов с помощью ICEQ Model...')
+                print('Использование квантованной ICEQ Model...')
                 if self.iceq_model is None:
                     raise ValueError("Модель ICEQ не загружена")
                 
+                user_prompt = self.__user_prompt_template \
+                    .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
+                    .replace(CHUNKS_PROMPT_TAG, text_content)
+
                 prompt = self.__system_prompt + '\n' + user_prompt
                 messages = [
                     {'role': 'user', 'content': prompt}
@@ -536,7 +582,7 @@ class QuestionsGenerator:
                 prompt = self.__user_prompt_template \
                     .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
                     .replace(CHUNKS_PROMPT_TAG, text[:2000])  # Ограничиваем длину
-                return self.__get_questions(llm, prompt)
+                return self.__get_questions(llm, prompt, questions_num)
 
         # Вычисление эмбеддингов
         print('Вычисление эмбеддингов для кластеризации...')
@@ -561,40 +607,57 @@ class QuestionsGenerator:
         print('Кластеризация завершена.')
 
         target_chunks = self.__get_central_objects(kmeans, clustering_embeddings, chunks)
-        print('Формирование промпта...')
-        prompt = self.__user_prompt_template \
-            .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
-            .replace(CHUNKS_PROMPT_TAG, '\n\n'.join(target_chunks))
+        print('Передача чанков для генерации...')
+        
+        text_for_generation = '\n\n'.join(target_chunks)
+        questions = self.__get_questions(llm, text_for_generation, questions_num)
 
-        questions = self.__get_questions(llm, prompt)
-        print(f'Сгенерировано {len(questions)} вопросов.')
+        # Если вопросов нет, возвращаем пустой список
+        if not questions:
+            print('Вопросы не были сгенерированы.')
+            return []
 
-        # Поиск эмбеддингов
-        print('Вычисление эмбеддингов для поиска...')
-        doc_embeddings = self.__search_model.encode(
-            target_chunks,
-            prompt_name='search_document',
-            device=self.device
-        )
-        query_embeddings = self.__search_model.encode(
-            [q['question'] for q in questions],
-            prompt_name='search_query',
-            device=self.device
-        )
-        print('Эмбеддинги для поиска вычислены.')
+        try:
+            # Поиск эмбеддингов
+            print('Вычисление эмбеддингов для поиска...')
+            doc_embeddings = self.__search_model.encode(
+                target_chunks,
+                prompt_name='search_document',
+                device=self.device
+            )
+            query_embeddings = self.__search_model.encode(
+                [q['question'] for q in questions],
+                prompt_name='search_query',
+                device=self.device
+            )
+            print('Эмбеддинги для поиска вычислены.')
 
-        print('Настройка FAISS индекса...')
-        # Создаем FAISS-индекс по косинусному расстоянию (через скалярное произведение)
-        index = faiss.IndexFlatIP(doc_embeddings.shape[1])
-        # Добавляем эмбеддинги в индекс
-        index.add(doc_embeddings)
-        print('FAISS индекс готов.')
+            # Проверка, что эмбеддинги для запросов существуют и имеют правильную размерность
+            if query_embeddings is None or len(query_embeddings.shape) < 2 or query_embeddings.shape[0] == 0:
+                print("⚠️ Не удалось создать эмбеддинги для вопросов. Объяснения будут пропущены.")
+                raise ValueError("Некорректные эмбеддинги для запроса")
 
-        print('Поиск соответствий вопросов и чанков...')
-        _, indices = index.search(query_embeddings, 1)
+            print('Настройка FAISS индекса...')
+            # Создаем FAISS-индекс по косинусному расстоянию (через скалярное произведение)
+            index = faiss.IndexFlatIP(doc_embeddings.shape[1])
+            # Добавляем эмбеддинги в индекс
+            index.add(doc_embeddings)
+            print('FAISS индекс готов.')
 
-        for question, explanation in zip(questions, target_chunks[indices]):
-            question['explanation'] = str(explanation[0])
+            print('Поиск соответствий вопросов и чанков...')
+            _, indices = index.search(query_embeddings, 1)
+
+            for question, explanation_chunk in zip(questions, target_chunks[indices]):
+                # Если модель не дала объяснение, используем чанк как fallback
+                if not question.get('explanation'):
+                    question['explanation'] = str(explanation_chunk[0])
+                
+        except Exception as e:
+            print(f'⚠️ Ошибка при добавлении объяснений из контекста: {e}')
+            # Просто возвращаем вопросы без объяснений, если что-то пошло не так
+            for q in questions:
+                if not q.get('explanation'):
+                    q['explanation'] = 'Объяснение не найдено из-за ошибки.'
 
         print('Генерация вопросов завершена.\n')
         return questions

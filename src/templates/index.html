@@ -95,6 +95,27 @@
                         </div>
                     </div>
 
+                    <div class="model-selection premium-mode-only">
+                        <label for="model-select">Модель генерации:</label>
+                        <select id="model-select" class="model-select">
+                            <option value="iceq">ICEQ (Локальная модель) - Временно отключена</option>
+                            <option value="deepseek" selected>DeepSeek (Облачная модель)</option>
+                        </select>
+                        <div class="model-info">
+                            <p id="model-description">DeepSeek: Мощная облачная модель с улучшенным качеством генерации</p>
+                        </div>
+                    </div>
+
+                    <div class="model-notification free-mode-only">
+                        <div class="notification-box">
+                            <span class="notification-icon">⚠️</span>
+                            <div class="notification-content">
+                                <p><strong>Временно используется DeepSeek</strong></p>
+                                <p>ICEQ модель отключена. Используется DeepSeek API.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="bottom-panel">
                         <button id="generate-btn" class="btn primary-btn">Сгенерировать тест</button>
                     </div>

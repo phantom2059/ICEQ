@@ -23,8 +23,8 @@ import random
 
 app = Flask(__name__)
 
-# Инициализация генератора вопросов
-question_generator = QuestionsGenerator()
+# Инициализация генератора вопросов (ICEQ отключена, жрет слишком много RAM)
+question_generator = QuestionsGenerator(init_llms=['deepseek'])
 
 @app.route('/')
 def index():
@@ -37,17 +37,34 @@ def generate_questions():
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
+        model_type = data.get('model', 'iceq')  # По умолчанию ICEQ для бесплатных
+        is_premium = data.get('isPremium', False)
 
         # Get advanced settings if provided
         settings = data.get('settings', {})
 
+        # Выбираем модель в зависимости от подписки
+        if not is_premium:
+            # Бесплатные пользователи: ICEQ временно отключена, используем DeepSeek
+            selected_model = 'deepseek'
+        else:
+            # Премиум пользователи: ICEQ временно отключена, используем DeepSeek
+            if model_type == 'iceq':
+                selected_model = 'deepseek'  # Fallback на DeepSeek
+                print("ICEQ выбрана, но отключена (жрет RAM). Используется DeepSeek.")
+            else:
+                selected_model = 'deepseek'
+
+        print(f"Используется модель: {selected_model}, Премиум: {is_premium}")
+
         # Используем генератор вопросов
-        formatted_questions = question_generator.generate(text_content, questions_num)
+        formatted_questions = question_generator.generate(text_content, questions_num, llm=selected_model)
 
         # Return the questions to the frontend
         return jsonify({
             'status': 'success',
-            'questions': formatted_questions
+            'questions': formatted_questions,
+            'model_used': selected_model
         })
     except Exception as e:
         import traceback
