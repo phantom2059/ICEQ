@@ -62,7 +62,7 @@ except Exception as e:
 # Часть данных для кластеризации
 DATA_PART = 0.01
 # Минимальное количество кластеров
-MIN_CLUSTERS_NUM = 5
+MIN_CLUSTERS_NUM = 10
 # Максимальное количество кластеров
 MAX_CLUSTERS_NUM = 500
 
