@@ -1,6 +1,14 @@
-<p align="center"><img src=img/logo.png width=450px></p>
+██╗ ██████╗███████╗ ██████╗ 
+██║██╔════╝██╔════╝██╔═══██╗
+██║██║     █████╗  ██║   ██║
+██║██║     ██╔══╝  ██║▄▄ ██║
+██║╚██████╗███████╗╚██████╔╝
+╚═╝ ╚═════╝╚══════╝ ╚══▀▀═╝ 
+                              
+🤖 Input → Chunks → Embeddings → Questions 🧠
 
-<p align="center"><b>ICEQ</b> (Input, Chunks, Embeddings, Questions) — это приложение, которое автоматически генерирует вопросы на основе объемного текста. Оно помогает пользователям лучше понимать и анализировать информацию, предлагая вопросы для проверки владения материалом.</p>
+<p align="center"><img src=img/logo.png width=450px></p>
+<p align="center"><b>ICEQ</b> (Input, Chunks, Embeddings, Questions) — это умное приложение для автоматической генерации вопросов по тексту с использованием передовых технологий ИИ. Превращайте любой текст в интерактивные тесты и викторины!</p>
 
 <div align="center">
   <h3>🧠 Core ML & NLP</h3>
@@ -15,20 +23,23 @@
     <img src="https://img.shields.io/badge/Numpy-2.2.4-013243?style=for-the-badge&logo=numpy&logoColor=white" alt="NumPy">
     <img src="https://img.shields.io/badge/SciPy-1.15.2-8CAAE6?style=for-the-badge&logo=scipy&logoColor=white" alt="SciPy">
     <img src="https://img.shields.io/badge/scikit--learn-1.6.1-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="Scikit-learn">
+    <img src="https://img.shields.io/badge/FAISS-1.10.0-00D2FF?style=for-the-badge&logo=meta&logoColor=white" alt="FAISS">
   </p>
   
   <h3>🌐 Web & API</h3>
   <p>
     <img src="https://img.shields.io/badge/Flask-2.2.2-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
-    <img src="https://img.shields.io/badge/OpenAI-1.70.0-412991?style=for-the-badge&logo=openai&logoColor=white" alt="OpenAI">
+    <img src="https://img.shields.io/badge/DeepSeek-API-8A2BE2?style=for-the-badge&logo=openai&logoColor=white" alt="DeepSeek">
     <img src="https://img.shields.io/badge/HTTPX-0.28.1-5A9FD4?style=for-the-badge&logo=python&logoColor=white" alt="HTTPX">
+    <img src="https://img.shields.io/badge/aiohttp-3.9.1-2C5AA0?style=for-the-badge&logo=aiohttp&logoColor=white" alt="aiohttp">
   </p>
   
-  <h3>🛠 Utilities</h3>
+  <h3>🛠 Utilities & Tools</h3>
   <p>
     <img src="https://img.shields.io/badge/tqdm-4.67.1-FFC107?style=for-the-badge&logo=python&logoColor=black" alt="tqdm">
     <img src="https://img.shields.io/badge/HuggingFace%20Hub-0.30.1-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black" alt="HuggingFace Hub">
     <img src="https://img.shields.io/badge/PyYAML-6.0.2-FF0000?style=for-the-badge&logo=yaml&logoColor=white" alt="PyYAML">
+    <img src="https://img.shields.io/badge/Python-3.8+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
   </p>
 </div>
 
@@ -124,11 +135,26 @@ questions = generator.generate(text, 10)
    ```
 2. Перейдите на запущенный локальный сервер ```http://127.0.0.1:8080/```
 <p align="center">
-  <img src="img/web1.png" width="45%">
+  <img src="img/image_main.png" width="45%">
   <img src="img/web2.png" width="45%">
 </p>
-
 
 ## Авторы
 - [Сергей Катцын](https://github.com/phantom2059)
 - [Никита Бакутов](https://github.com/droyti46)
+
+- [DeepSeek](https://deepseek.com) за предоставление API
+- [Hugging Face](https://huggingface.co) за экосистему ML моделей
+- Сообществу open-source разработчиков
+
+```
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                    ⭐ ICEQ ⭐                                  ║
+║                        Создаём будущее образования с ИИ                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+```
+
+<p align="center">
+  Сделано с ❤️ в России
+</p>
+
