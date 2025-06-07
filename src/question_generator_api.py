@@ -1,3 +1,16 @@
+"""
+API модуль для генерации вопросов через DeepSeek и Qwen
+
+Этот модуль содержит асинхронные функции для взаимодействия с внешними API:
+- generate_questions_deepseek: использует DeepSeek API для генерации вопросов
+- generate_questions_qwen: использует Qwen API для генерации вопросов
+- test_question_generation: тестовая функция для проверки работоспособности API
+
+Требует настройки переменных окружения:
+- DEEPSEEK_API_KEY: ключ для DeepSeek API
+- CHUTES_API_KEY: ключ для Qwen API
+"""
+
 import aiohttp
 import asyncio
 import json
@@ -184,7 +197,7 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
         print(f"❌ Ошибка загрузки промптов: {e}")
         # Fallback промпты на случай отсутствия файлов
         system_prompt = "Ты - эксперт по созданию образовательных тестов."
-        user_prompt_template = "Создай {question_count} вопросов по тексту: {text}"
+        user_prompt_template = "Создай [QUESTIONS_NUM] вопросов по тексту: [CHUNKS]"
         print("⚠️ Используются fallback промпты")
     
     # Формируем пользовательский промпт

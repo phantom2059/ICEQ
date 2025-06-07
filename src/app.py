@@ -15,12 +15,10 @@ import json
 import csv
 import io
 from datetime import datetime
-import time
 
 from flask import Flask, render_template, request, jsonify, send_file
 
 from generation import QuestionsGenerator
-import random
 
 # Отключаем автоматическую загрузку .env Flask-ом, чтобы избежать проблем с кодировкой
 os.environ.setdefault('FLASK_SKIP_DOTENV', '1')
@@ -42,6 +40,16 @@ def index():
 
 @app.route('/estimate-time', methods=['POST'])
 def estimate_time():
+    """
+    Оценка времени генерации вопросов
+    
+    Принимает POST запрос с JSON содержащим:
+        - text: текст для анализа
+        - questionNumber: количество вопросов
+    
+    Returns:
+        JSON: статус и оценка времени генерации
+    """
     try:
         # Get data from request
         data = request.get_json()
@@ -63,15 +71,23 @@ def estimate_time():
 
 @app.route('/generate', methods=['POST'])
 def generate_questions():
+    """
+    Генерация вопросов по тексту
+    
+    Принимает POST запрос с JSON содержащим:
+        - text: текст для генерации вопросов
+        - questionNumber: количество вопросов
+        - model: модель для генерации ('deepseek', 'qwen', 'iceq')
+    
+    Returns:
+        JSON: статус и сгенерированные вопросы
+    """
     try:
         # Получаем данные из запроса
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
         model = data.get('model', 'deepseek')  # По умолчанию используем deepseek
-
-        # Get advanced settings if provided
-        settings = data.get('settings', {})
 
         # Используем генератор вопросов
         formatted_questions = question_generator.generate(text_content, questions_num, llm=model)

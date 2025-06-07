@@ -21,6 +21,7 @@
   <p>
     <img src="https://img.shields.io/badge/Flask-2.2.2-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask">
     <img src="https://img.shields.io/badge/DeepSeek-API-8A2BE2?style=for-the-badge&logo=openai&logoColor=white" alt="DeepSeek">
+    <img src="https://img.shields.io/badge/Qwen-API-FF6B35?style=for-the-badge&logo=alibaba&logoColor=white" alt="Qwen">
     <img src="https://img.shields.io/badge/HTTPX-0.28.1-5A9FD4?style=for-the-badge&logo=python&logoColor=white" alt="HTTPX">
     <img src="https://img.shields.io/badge/aiohttp-3.9.1-2C5AA0?style=for-the-badge&logo=aiohttp&logoColor=white" alt="aiohttp">
   </p>
@@ -55,7 +56,10 @@
 
 ## Возможности
 - Обработка длинных текстов
-- Генерация вопросов на основе содержимого
+- Генерация вопросов с использованием различных ИИ моделей:
+  - **DeepSeek API** - мощная языковая модель для качественной генерации
+  - **Qwen API** - альтернативная модель для разнообразия результатов  
+  - **ICEQ (локальная)** - собственная дообученная модель
 
 ## Установка
 
@@ -73,11 +77,14 @@
 ```bash
 cd src
 ```
-Создайте файл ```.env``` и добавьте в него свой ключ DeepSeek API
+Создайте файл ```.env``` в корне проекта и добавьте в него API ключи:
 
 ```
-DEEPSEEK_API_KEY=<Your API key>
+DEEPSEEK_API_KEY=<Your DeepSeek API key>
+CHUTES_API_KEY=<Your Qwen API key>
 ```
+
+Можно использовать только один из ключей, в зависимости от того, какую модель планируете использовать.
 
 ### Python интерфейс
 
@@ -87,12 +94,20 @@ from generation import QuestionsGenerator
 with open('text.txt', 'r', encoding='utf8') as f:
     text = f.read()
 
-# Генерация 10 вопросов по тексту
+# Генерация 10 вопросов по тексту (можно выбрать модель)
 generator = QuestionsGenerator()
-questions = generator.generate(text, 10)
+
+# Используем DeepSeek API (по умолчанию)
+questions = generator.generate(text, 10, llm='deepseek')
+
+# Или используем Qwen API  
+questions = generator.generate(text, 10, llm='qwen')
+
+# Или локальную модель ICEQ
+questions = generator.generate(text, 10, llm='iceq')
 ```
 
-```QuestionsGenerator.generate(text: str, questions_num: int) -> list[dict]``` возвращает список со словарями. Каждый словарь представляет из себя описание вопроса. Пример словаря:
+```QuestionsGenerator.generate(text: str, questions_num: int, llm: str = 'deepseek') -> list[dict]``` возвращает список со словарями. Каждый словарь представляет из себя описание вопроса. Пример словаря:
 
 ```json
 {

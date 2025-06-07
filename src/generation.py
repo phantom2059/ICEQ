@@ -440,9 +440,7 @@ class QuestionsGenerator:
                     finally:
                         loop.close()
                     
-                    questions = parse_questions(response_text)
-                    print(f"распарсилось вопросов: {len(questions)}")
-                    return questions
+                    return parse_questions(response_text)
                 except Exception as e:
                     print(f'Ошибка при работе с Qwen API: {e}')
                     return []
