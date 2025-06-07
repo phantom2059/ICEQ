@@ -193,42 +193,46 @@
             </div>
 
             <!-- Экран предпросмотра теста -->
-            <div id="test-preview-screen" class="screen">
+            <div id="test-preview-screen" class="screen hidden">
                 <div class="breadcrumbs">
                     <a href="#" id="back-to-create-test">Создать тест</a> > Предпросмотр
                 </div>
-
+                
                 <div class="card">
                     <h2>Тест готов!</h2>
                     <p>Создан тест из <span id="preview-question-count">10</span> вопросов</p>
 
-                    <div class="premium-mode-only">
-                        <button id="edit-questions-btn" class="btn secondary-btn">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                            </svg>
-                            Редактировать вопросы
+                    <!-- Три основные кнопки действий -->
+                    <div class="main-actions-group">
+                        <button id="start-test-btn" class="btn action-btn">
+                            <span class="btn-icon">▶</span>
+                            <span class="btn-text">Пройти онлайн</span>
+                        </button>
+                        <button id="edit-questions-btn" class="btn action-btn premium-feature">
+                            <span class="btn-icon">✎</span>
+                            <span class="btn-text">Редактировать вопросы</span>
+                        </button>
+                        <button id="download-test-btn" class="btn action-btn">
+                            <span class="btn-icon">⭳</span>
+                            <span class="btn-text">Скачать тест</span>
                         </button>
                     </div>
 
-                    <div class="questions-list-container">
-                        <h3>Список вопросов</h3>
-                        <div id="questions-list" class="questions-list"></div>
+                    <!-- Дополнительные настройки -->
+                    <div class="test-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="show-explanations" checked>
+                            <span class="checkmark"></span>
+                            Показывать объяснения после ответа
+                        </label>
                     </div>
 
-                    <div class="bottom-panel">
-                        <button id="download-test-btn" class="btn secondary-btn">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-                            </svg>
-                            Скачать тест
-                        </button>
-                        <button id="start-test-btn" class="btn primary-btn">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
-                                <path fill="currentColor" d="M8 5v14l11-7-11-7z"/>
-                            </svg>
-                            Пройти онлайн
-                        </button>
+                    <!-- Предпросмотр теста -->
+                    <div class="test-preview-section">
+                        <h3>Предпросмотр теста</h3>
+                        <div class="questions-list-container">
+                            <div id="questions-list" class="questions-list"></div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -133,6 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let correctCount = 0;
     let showExplanationsMode = true;
     let testQuality = 85; // Default quality
+    let showAnswersImmediately = true; // По умолчанию показываем ответы
 
     // Premium state
     let isPremiumMode = localStorage.getItem('premiumMode') === 'true';
@@ -881,105 +882,30 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.json();
         })
         .then(data => {
-            if (data.status === 'success') {
-                if (data.questions && data.questions.length > 0) {
-                    logMessage(`Успешно сгенерировано ${data.questions.length} вопросов`);
+            if (data.status === 'success' && data.questions && data.questions.length > 0) {
+                logMessage(`Успешно сгенерировано ${data.questions.length} вопросов`);
 
-                    quizData = data.questions;
-                    previewQuestionCount.textContent = quizData.length;
-                    updateQualityIndicator(testQuality);
-
-                    currentQuestion = 0;
-                    userAnswers = Array(quizData.length).fill(null);
-                    correctCount = 0;
-
-                    setTimeout(() => {
-                        prepareTestPreview();
-                        showScreen(testPreviewScreen);
-                    }, 1000);
-                } else {
-                    logMessage("Не удалось сгенерировать вопросы. Попробуйте другой текст.");
-                    setTimeout(() => showScreen(createTestScreen), 2000);
-                }
-            } else {
-                logMessage(`Ошибка: ${data.message}`);
-                setTimeout(() => showScreen(createTestScreen), 2000);
-            }
-        })
-        .catch(error => {
-            logMessage(`Произошла ошибка: ${error.message}`);
-            logMessage("Генерирую тестовые вопросы для демонстрации...");
-
-            setTimeout(() => {
-                // Mock data for demonstration
-                const mockQuestions = [
-                    {
-                        question: "Какая планета самая большая в Солнечной системе?",
-                        answers: [
-                            { answer: "Земля", is_correct: false },
-                            { answer: "Юпитер", is_correct: true },
-                            { answer: "Сатурн", is_correct: false },
-                            { answer: "Марс", is_correct: false }
-                        ],
-                        explanation: "Юпитер является самой большой планетой в Солнечной системе с массой, в 318 раз превышающей массу Земли."
-                    },
-                    {
-                        question: "В каком году началась Первая мировая война?",
-                        answers: [
-                            { answer: "1914", is_correct: true },
-                            { answer: "1918", is_correct: false },
-                            { answer: "1939", is_correct: false },
-                            { answer: "1912", is_correct: false }
-                        ],
-                        explanation: "Первая мировая война началась 28 июля 1914 года и продолжалась до 11 ноября 1918 года."
-                    },
-                    {
-                        question: "Кто написал 'Война и мир'?",
-                        answers: [
-                            { answer: "Фёдор Достоевский", is_correct: false },
-                            { answer: "Лев Толстой", is_correct: true },
-                            { answer: "Антон Чехов", is_correct: false },
-                            { answer: "Иван Тургенев", is_correct: false }
-                        ],
-                        explanation: "Роман 'Война и мир' был написан Львом Николаевичем Толстым и опубликован в 1865-1869 годах."
-                    },
-                    {
-                        question: "Какой элемент имеет химический символ 'H'?",
-                        answers: [
-                            { answer: "Гелий", is_correct: false },
-                            { answer: "Водород", is_correct: true },
-                            { answer: "Ртуть", is_correct: false },
-                            { answer: "Гафний", is_correct: false }
-                        ],
-                        explanation: "Химический символ 'H' соответствует водороду (от латинского 'hydrogenium')."
-                    },
-                    {
-                        question: "Какой год считается годом основания Москвы?",
-                        answers: [
-                            { answer: "1147", is_correct: true },
-                            { answer: "1703", is_correct: false },
-                            { answer: "988", is_correct: false },
-                            { answer: "1237", is_correct: false }
-                        ],
-                        explanation: "Первое упоминание о Москве в летописях относится к 1147 году, когда Юрий Долгорукий пригласил в Москву своего союзника князя Святослава Ольговича."
-                    }
-                ];
-
-                logMessage("Создано 5 тестовых вопросов");
-
-                quizData = mockQuestions;
-                previewQuestionCount.textContent = quizData.length;
-                updateQualityIndicator(testQuality);
-
+                // Сохраняем данные и готовимся к отображению
+                quizData = data.questions;
                 currentQuestion = 0;
                 userAnswers = Array(quizData.length).fill(null);
                 correctCount = 0;
 
+                // Через секунду показываем экран предпросмотра
                 setTimeout(() => {
-                    prepareTestPreview();
                     showScreen(testPreviewScreen);
+                    prepareTestPreview();
                 }, 1000);
-            }, 2000);
+
+            } else {
+                logMessage("Не удалось сгенерировать вопросы. Попробуйте другой текст.");
+                setTimeout(() => showScreen(createTestScreen), 2000);
+            }
+        })
+        .catch(error => {
+            logMessage(`Произошла критическая ошибка: ${error.message}`);
+            logMessage("Пожалуйста, попробуйте еще раз или перезагрузите страницу.");
+            setTimeout(() => showScreen(createTestScreen), 3000);
         });
     }
 
@@ -999,6 +925,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Prepare the test preview
     function prepareTestPreview() {
+        // Обновляем UI элементы
+        if (previewQuestionCount) {
+            previewQuestionCount.textContent = quizData.length;
+        }
+        
+        if (!questionsList) {
+            return;
+        }
+        
         questionsList.innerHTML = '';
 
         quizData.forEach((question, index) => {
@@ -1070,7 +1005,9 @@ document.addEventListener('DOMContentLoaded', function () {
         userAnswers = Array(quizData.length).fill(null);
         currentQuestion = 0;
         correctCount = 0;
-        showExplanationsMode = showExplanations.checked;
+        // Используем правильный чекбокс для определения режима
+        const showExplanationsCheckbox = document.getElementById('show-explanations');
+        showExplanationsMode = showExplanationsCheckbox ? showExplanationsCheckbox.checked : true;
         displayQuestion();
         showScreen(questionScreen);
     }
@@ -1165,7 +1102,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Add each answer
             question.answers.forEach((answer, answerIndex) => {
-                const answerItem = createEditableAnswer(answer, answerIndex);
+                const answerItem = createEditableAnswer(answer, answerIndex, questionIndex);
                 answersContainer.appendChild(answerItem);
             });
 
@@ -1177,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', function () {
             addAnswerBtn.textContent = '+ Добавить вариант ответа';
             addAnswerBtn.addEventListener('click', function() {
                 const newAnswer = { answer: '', is_correct: false };
-                const answerItem = createEditableAnswer(newAnswer, question.answers.length);
+                const answerItem = createEditableAnswer(newAnswer, question.answers.length, questionIndex);
                 answersContainer.appendChild(answerItem);
             });
             questionItem.appendChild(addAnswerBtn);
@@ -1208,7 +1145,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Create an editable answer item
-    function createEditableAnswer(answer, index) {
+    function createEditableAnswer(answer, answerIndex, questionIndex) {
         const answerItem = document.createElement('div');
         answerItem.className = 'edit-answer-item';
 
@@ -1216,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const correctCheckbox = document.createElement('input');
         correctCheckbox.className = 'edit-answer-correct';
         correctCheckbox.type = 'radio';
-        correctCheckbox.name = `correct-answer-${Date.now()}`;
+        correctCheckbox.name = `correct-answer-${questionIndex}`;
         correctCheckbox.checked = answer.is_correct;
         correctCheckbox.addEventListener('change', function() {
             // When a radio button is checked, uncheck all others in the same question
@@ -1304,7 +1241,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Add each answer
         newQuestion.answers.forEach((answer, answerIndex) => {
-            const answerItem = createEditableAnswer(answer, answerIndex);
+            const answerItem = createEditableAnswer(answer, answerIndex, questionIndex);
             answersContainer.appendChild(answerItem);
         });
 
@@ -1316,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', function () {
         addAnswerBtn.textContent = '+ Добавить вариант ответа';
         addAnswerBtn.addEventListener('click', function() {
             const newAnswer = { answer: '', is_correct: false };
-            const answerItem = createEditableAnswer(newAnswer, newQuestion.answers.length);
+            const answerItem = createEditableAnswer(newAnswer, newQuestion.answers.length, questionIndex);
             answersContainer.appendChild(answerItem);
         });
         questionItem.appendChild(addAnswerBtn);
@@ -1465,30 +1402,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const question = quizData[currentQuestion];
         const selectedAnswer = question.answers[selectedOption];
-
         userAnswers[currentQuestion] = selectedAnswer.answer;
 
-        // Check if answer is correct
         const isCorrect = selectedAnswer.is_correct;
-
         if (isCorrect) {
             correctCount++;
         }
 
         if (showExplanationsMode) {
-            // Show explanation screen
+            // Показываем экран с объяснением
             userAnswerDisplay.textContent = `Ваш ответ: ${selectedAnswer.answer}`;
             userAnswerDisplay.className = isCorrect ? 'user-answer correct' : 'user-answer incorrect';
 
-            // Find the correct answer
             const correctAnswer = question.answers.find(answer => answer.is_correct);
             correctAnswerDisplay.textContent = `Правильный ответ: ${correctAnswer.answer}`;
 
             explanationText.textContent = question.explanation || 'Объяснение не предоставлено.';
-
             showScreen(explanationScreen);
         } else {
-            // Go directly to next question
+            // Сразу переходим к следующему вопросу
             goToNextQuestion();
         }
     }
@@ -1646,7 +1578,6 @@ document.addEventListener('DOMContentLoaded', function () {
             URL.revokeObjectURL(url);
         })
         .catch(error => {
-            console.error('Ошибка экспорта:', error);
             alert('Не удалось экспортировать тест: ' + error.message);
         });
     }

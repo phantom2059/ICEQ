@@ -28,39 +28,50 @@ question_generator = QuestionsGenerator(init_llms=['deepseek'])
 
 @app.route('/')
 def index():
+    """
+    Главная страница приложения
+    
+    Returns:
+        str: HTML-страница с интерфейсом приложения
+    """
     return render_template('index.html')
 
 @app.route('/generate', methods=['POST'])
 def generate_questions():
+    """
+    Генерация вопросов по переданному тексту
+    
+    Принимает JSON с параметрами:
+        - text: текст для генерации вопросов
+        - questionNumber: количество вопросов
+        - model: выбранная модель ('iceq' или 'deepseek')
+        - isPremium: статус премиум-подписки
+    
+    Returns:
+        JSON: результат генерации с вопросами или ошибкой
+    """
     try:
-        # Get data from request
+        # Получаем данные из запроса
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
-        model_type = data.get('model', 'iceq')  # По умолчанию ICEQ для бесплатных
+        model_type = data.get('model', 'iceq')
         is_premium = data.get('isPremium', False)
-
-        # Get advanced settings if provided
-        settings = data.get('settings', {})
 
         # Выбираем модель в зависимости от подписки
         if not is_premium:
-            # Бесплатные пользователи: ICEQ временно отключена, используем DeepSeek
             selected_model = 'deepseek'
         else:
-            # Премиум пользователи: ICEQ временно отключена, используем DeepSeek
+            selected_model = model_type if model_type in ['deepseek', 'iceq'] else 'deepseek'
             if model_type == 'iceq':
-                selected_model = 'deepseek'  # Fallback на DeepSeek
-                print("ICEQ выбрана, но отключена (жрет RAM). Используется DeepSeek.")
-            else:
+                # Временно отключаем ICEQ из-за высокого потребления RAM
+                print("ICEQ выбрана, но временно отключена, используем DeepSeek.")
                 selected_model = 'deepseek'
 
-        print(f"Используется модель: {selected_model}, Премиум: {is_premium}")
-
-        # Используем генератор вопросов
+        # Генерируем вопросы
         formatted_questions = question_generator.generate(text_content, questions_num, llm=selected_model)
 
-        # Return the questions to the frontend
+        # Возвращаем результат на фронтенд
         return jsonify({
             'status': 'success',
             'questions': formatted_questions,
@@ -76,6 +87,17 @@ def generate_questions():
 
 @app.route('/export', methods=['POST'])
 def export_test():
+    """
+    Экспорт теста в различных форматах
+    
+    Принимает JSON с параметрами:
+        - format: формат экспорта ('json', 'csv', 'txt')
+        - questions: список вопросов
+        - userAnswers: ответы пользователя (опционально)
+    
+    Returns:
+        file: файл с тестом в выбранном формате
+    """
     try:
         data = request.json
         export_format = data.get('format', 'json')
@@ -99,6 +121,16 @@ def export_test():
         }), 500
 
 def export_json(questions, user_answers=None):
+    """
+    Экспорт теста в формате JSON
+    
+    Args:
+        questions (list): список вопросов теста
+        user_answers (list, optional): ответы пользователя
+    
+    Returns:
+        Response: файл JSON для скачивания
+    """
     test_data = {
         'title': 'ICEQ Тест',
         'dateCreated': datetime.now().isoformat(),
@@ -113,7 +145,7 @@ def export_json(questions, user_answers=None):
     # Создаем байтовый объект из строки JSON
     json_bytes = json_data.encode('utf-8')
 
-    # Создаем имя файла
+    # Создаем имя файла с текущей датой
     filename = f'ICEQ-Test_{datetime.now().strftime("%Y-%m-%d")}.json'
 
     # Отправляем файл пользователю без сохранения на сервере
@@ -126,18 +158,28 @@ def export_json(questions, user_answers=None):
 
 
 def export_csv(questions, user_answers=None):
+    """
+    Экспорт теста в формате CSV
+    
+    Args:
+        questions (list): список вопросов теста
+        user_answers (list, optional): ответы пользователя
+    
+    Returns:
+        Response: файл CSV для скачивания
+    """
     output = io.StringIO()
     writer = csv.writer(output)
 
     if user_answers and len(user_answers) == len(questions):
-        # Export with user answers
+        # Экспорт с ответами пользователя
         writer.writerow(['Вопрос', 'Ваш ответ', 'Правильный ответ', 'Статус', 'Объяснение'])
 
         for i, q in enumerate(questions):
             correct_answer = next((a['answer'] for a in q['answers'] if a['is_correct']), '')
             user_answer = user_answers[i] if i < len(user_answers) else ''
 
-            # Determine status
+            # Определяем статус ответа
             if user_answer is None:
                 status = 'Пропущен'
             elif user_answer == correct_answer:
@@ -148,7 +190,7 @@ def export_csv(questions, user_answers=None):
             writer.writerow(
                 [q['question'], user_answer or 'Пропущен', correct_answer, status, q.get('explanation', '')])
     else:
-        # Export without user answers
+        # Экспорт без ответов пользователя
         writer.writerow(['Вопрос', 'Правильный ответ', 'Варианты ответов', 'Объяснение'])
         for q in questions:
             correct_answer = next((a['answer'] for a in q['answers'] if a['is_correct']), '')
@@ -167,20 +209,30 @@ def export_csv(questions, user_answers=None):
 
 
 def export_txt(questions, user_answers=None):
+    """
+    Экспорт теста в текстовом формате
+    
+    Args:
+        questions (list): список вопросов теста
+        user_answers (list, optional): ответы пользователя
+    
+    Returns:
+        Response: текстовый файл для скачивания
+    """
     output = io.StringIO()
 
     output.write('ICEQ - Результаты теста\n')
     output.write(f'Дата: {datetime.now().strftime("%Y-%m-%d")}\n\n')
 
     if user_answers and len(user_answers) == len(questions):
-        # Calculate score
+        # Рассчитываем результат теста
         correct_count = sum(1 for i, q in enumerate(questions) if
                             user_answers[i] == next((a['answer'] for a in q['answers'] if a['is_correct']), ''))
 
         output.write(f'Результат: {correct_count} из {len(questions)} ')
         output.write(f'({round((correct_count / len(questions)) * 100)}%)\n\n')
 
-        # Write questions with user answers
+        # Записываем вопросы с ответами пользователя
         for i, question in enumerate(questions):
             output.write(f'Вопрос {i + 1}: {question["question"]}\n')
 
@@ -202,7 +254,7 @@ def export_txt(questions, user_answers=None):
 
             output.write('\n')
     else:
-        # Just write questions and answers without user responses
+        # Экспорт только вопросов без ответов пользователя
         for i, question in enumerate(questions):
             output.write(f'Вопрос {i + 1}: {question["question"]}\n')
 

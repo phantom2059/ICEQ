@@ -175,7 +175,6 @@ body {
 }
 
 .card:hover {
-    transform: translateY(-5px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
 }
 
@@ -667,7 +666,6 @@ h2 {
 }
 
 .action-card:hover {
-    transform: translateY(-10px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.7);
 }
 
@@ -1149,7 +1147,6 @@ h2 {
 }
 
 .export-option:hover {
-    transform: translateY(-5px);
     border-color: var(--accent-primary);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
@@ -1247,7 +1244,6 @@ h2 {
 }
 
 .pricing-card:hover {
-    transform: translateY(-10px);
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
 }
 
@@ -1308,7 +1304,6 @@ h2 {
 }
 
 .plan-btn:hover {
-    transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -1551,6 +1546,18 @@ body.premium-mode .premium-btn {
         max-width: 300px;
     }
 
+    /* Кнопки действий на мобильных устройствах */
+    .main-actions-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .action-btn {
+        width: 100%;
+        max-width: 280px;
+        min-width: auto;
+    }
+
     .bottom-panel {
         flex-direction: column;
         gap: 12px;
@@ -1646,4 +1653,121 @@ body.premium-mode .premium-btn {
     .loading-stage .stage-icon {
         font-size: 16px;
     }
+}
+
+/* Главные кнопки на первом экране */
+.main-screen .action-btn {
+    padding: 24px 48px;
+    font-size: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Общие стили для кнопок, чтобы убрать "прыжки" */
+.btn, .tab-btn, .answer-option, .edit-add-answer, .edit-add-question, .edit-remove-btn, .edit-answer-remove {
+    transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn:hover, .tab-btn:hover, .tab-btn.active {
+    transform: translateY(-2px); /* Легкий сдвиг вверх */
+}
+
+.action-btn:hover {
+    transform: translateY(-4px); /* Сдвиг посильнее для главных кнопок */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.answer-option:hover {
+    transform: none; /* Убираем эффект для вариантов ответа */
+    background-color: var(--bg-tertiary);
+}
+
+/* Main actions group for test preview screen */
+.main-actions-group {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    margin: 30px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    flex: 1;
+    min-width: 180px;
+    max-width: 220px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn .btn-icon {
+    font-size: 20px;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.2);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn .btn-text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+/* Специальные стили для каждой кнопки */
+#start-test-btn {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+#start-test-btn:hover {
+    background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+}
+
+#edit-questions-btn {
+    background: linear-gradient(135deg, #ff9800 0%, #ff5722 100%);
+}
+
+#edit-questions-btn:hover {
+    background: linear-gradient(135deg, #ff5722 0%, #ff9800 100%);
+}
+
+#download-test-btn {
+    background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+}
+
+#download-test-btn:hover {
+    background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+}
+
+/* Test preview section */
+.test-preview-section {
+    margin-top: 40px;
+}
+
+.test-preview-section h3 {
+    color: var(--text-secondary);
+    font-size: 18px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bg-tertiary);
 }
