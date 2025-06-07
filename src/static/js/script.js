@@ -901,10 +901,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 logMessage('Генерация завершена успешно!');
             } else {
                 logMessage('Ошибка генерации: ' + data.message);
+                
+                // Показываем пользователю ошибку и возвращаем к редактированию
+                setTimeout(() => {
+                    alert('Ошибка генерации: ' + data.message);
+                    showScreen(createTestScreen);
+                }, 2000);
             }
         })
         .catch(error => {
             logMessage('Ошибка сети: ' + error.message);
+            setTimeout(() => {
+                alert('Ошибка сети: ' + error.message);
+                showScreen(createTestScreen);
+            }, 2000);
         });
     }
 

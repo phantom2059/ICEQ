@@ -631,6 +631,23 @@ class QuestionsGenerator:
 
         print(f'Начало генерации {questions_num} вопросов...')
         
+        # Простая проверка: разделяем текст на параграфы и смотрим, хватит ли для вопросов
+        initial_chunks = text.split('\n\n')  # Разделяем по двойным переносам (параграфы)
+        initial_chunks = [chunk.strip() for chunk in initial_chunks if chunk.strip()]
+        
+        # Проверяем, что есть достаточно смысловых блоков для генерации вопросов
+        if len(initial_chunks) < questions_num:
+            # Пробуем разделить по одинарным переносам
+            backup_chunks = text.split('\n')
+            backup_chunks = [chunk.strip() for chunk in backup_chunks if chunk.strip() and len(chunk.split()) > 5]
+            
+            if len(backup_chunks) < questions_num:
+                raise ValueError(
+                    f"Недостаточно информационных блоков в тексте для генерации {questions_num} вопросов. "
+                    f"Найдено {len(backup_chunks)} блоков. Попробуйте уменьшить количество вопросов до {len(backup_chunks)} "
+                    f"или добавить больше структурированного текста."
+                )
+        
         # Запускаем таймер
         import time
         start_time = time.time()

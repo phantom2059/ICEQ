@@ -15,6 +15,7 @@ import aiohttp
 import asyncio
 import json
 import os
+import re
 from dotenv import load_dotenv
 
 # Загружаем переменные окружения с обработкой кодировок
@@ -47,6 +48,89 @@ try:
 
 except Exception as e:
     print(f"⚠️ Критическая ошибка при загрузке .env: {e}")
+
+
+def analyze_text_sufficiency(text: str, num_questions: int) -> dict:
+    """
+    Анализирует достаточность текста для генерации заданного количества вопросов
+    
+    Args:
+        text (str): Входной текст для анализа
+        num_questions (int): Желаемое количество вопросов
+    
+    Returns:
+        dict: Словарь с результатами анализа:
+            - is_sufficient (bool): Достаточно ли текста
+            - recommended_questions (int): Рекомендуемое количество вопросов
+            - text_stats (dict): Статистика текста
+            - warnings (list): Список предупреждений
+    """
+    warnings = []
+    text_stats = {}
+    
+    # Базовая статистика текста
+    words = text.split()
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    
+    paragraphs = text.split('\n\n')
+    paragraphs = [p.strip() for p in paragraphs if p.strip()]
+    
+    text_stats = {
+        'characters': len(text),
+        'words': len(words),
+        'sentences': len(sentences),
+        'paragraphs': len(paragraphs)
+    }
+    
+    # Эвристические правила для оценки достаточности
+    # Минимум ~100-150 слов на вопрос для качественной генерации
+    min_words_per_question = 100
+    optimal_words_per_question = 150
+    
+    # Оценка достаточности по словам
+    min_words_needed = num_questions * min_words_per_question
+    optimal_words_needed = num_questions * optimal_words_per_question
+    
+    is_sufficient = text_stats['words'] >= min_words_needed
+    
+    # Рекомендуемое количество вопросов на основе объема текста
+    recommended_questions = max(1, text_stats['words'] // optimal_words_per_question)
+    
+    # Проверки и предупреждения
+    if text_stats['words'] < min_words_needed:
+        if text_stats['words'] < 100:  # Блокируем только критически маленькие тексты
+            warnings.append(f"Критически мало текста ({text_stats['words']} слов). Минимум для качественной генерации: 100 слов.")
+        elif text_stats['words'] < 200:
+            warnings.append(f"Мало текста ({text_stats['words']} слов). Рекомендуется добавить больше информации для лучшего качества.")
+        else:
+            warnings.append(f"Недостаточно текста для {num_questions} вопросов. Рекомендуется не более {recommended_questions} вопросов.")
+    
+    if text_stats['sentences'] < num_questions * 2:
+        warnings.append(f"Мало предложений ({text_stats['sentences']}) для генерации {num_questions} разнообразных вопросов.")
+    
+    if text_stats['paragraphs'] < 2 and num_questions > 5:
+        warnings.append("Текст состоит из одного абзаца. Для большого количества вопросов рекомендуется структурированный текст.")
+    
+    # Проверка на повторяющиеся фразы (может указывать на низкое качество)
+    word_freq = {}
+    for word in words:
+        word_lower = word.lower().strip('.,!?;:')
+        if len(word_lower) > 3:  # Игнорируем короткие слова
+            word_freq[word_lower] = word_freq.get(word_lower, 0) + 1
+    
+    # Если слишком много повторений одних и тех же слов
+    max_repetitions = max(word_freq.values()) if word_freq else 0
+    if max_repetitions > len(words) * 0.1:  # Если какое-то слово встречается более чем в 10% текста
+        warnings.append("В тексте много повторений. Это может снизить качество генерируемых вопросов.")
+    
+    return {
+        'is_sufficient': is_sufficient,
+        'recommended_questions': recommended_questions,
+        'text_stats': text_stats,
+        'warnings': warnings,
+        'severity': 'error' if text_stats['words'] < 100 else 'warning' if warnings else 'ok'
+    }
 
 
 async def generate_questions_deepseek(text: str, num_questions: int = 5):
