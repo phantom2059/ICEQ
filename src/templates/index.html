@@ -154,10 +154,33 @@
             <div id="loading-screen" class="screen">
                 <div class="card">
                     <h2>Генерация теста...</h2>
+                    
+                    <!-- Индикатор времени -->
+                    <div class="time-estimate">
+                        <div class="time-info">
+                            <span class="time-label">⏱️ Ожидаемое время:</span>
+                            <span id="estimated-time">~10 сек</span>
+                        </div>
+                        <div class="time-info">
+                            <span class="time-label">📊 Анализируемый текст:</span>
+                            <span id="text-stats">Загрузка...</span>
+                        </div>
+                    </div>
+                    
                     <div class="loader-wrapper">
                         <div class="loader"></div>
                         <div class="loader-progress">0%</div>
                     </div>
+                    
+                    <!-- Индикатор качества (добавляем недостающий элемент) -->
+                    <div class="quality-indicator">
+                        <span class="quality-label">Качество теста:</span>
+                        <div class="quality-bar">
+                            <div id="quality-fill" class="quality-fill"></div>
+                        </div>
+                        <span id="quality-score">85%</span>
+                    </div>
+                    
                     <div class="loading-stages">
                         <div class="loading-stage" data-stage="analyze">
                             <span class="stage-icon">⏳️</span>

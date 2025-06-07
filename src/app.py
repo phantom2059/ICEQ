@@ -15,6 +15,7 @@ import json
 import csv
 import io
 from datetime import datetime
+import time
 
 from flask import Flask, render_template, request, jsonify, send_file
 
@@ -36,46 +37,45 @@ def index():
     """
     return render_template('index.html')
 
+@app.route('/estimate-time', methods=['POST'])
+def estimate_time():
+    try:
+        # Get data from request
+        data = request.get_json()
+        text_content = data.get('text', '')
+        questions_num = int(data.get('questionNumber', 10))
+        
+        # Получаем оценку времени
+        time_estimate = question_generator.estimate_generation_time(text_content, questions_num, 'iceq')
+        
+        return jsonify({
+            'status': 'success',
+            'estimate': time_estimate
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/generate', methods=['POST'])
 def generate_questions():
-    """
-    Генерация вопросов по переданному тексту
-    
-    Принимает JSON с параметрами:
-        - text: текст для генерации вопросов
-        - questionNumber: количество вопросов
-        - model: выбранная модель ('iceq' или 'deepseek')
-        - isPremium: статус премиум-подписки
-    
-    Returns:
-        JSON: результат генерации с вопросами или ошибкой
-    """
     try:
         # Получаем данные из запроса
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
-        model_type = data.get('model', 'iceq')
-        is_premium = data.get('isPremium', False)
 
-        # Выбираем модель в зависимости от подписки
-        if not is_premium:
-            selected_model = 'deepseek'
-        else:
-            selected_model = model_type if model_type in ['deepseek', 'iceq'] else 'deepseek'
-            if model_type == 'iceq':
-                # Временно отключаем ICEQ из-за высокого потребления RAM
-                print("ICEQ выбрана, но временно отключена, используем DeepSeek.")
-                selected_model = 'deepseek'
+        # Get advanced settings if provided
+        settings = data.get('settings', {})
 
-        # Генерируем вопросы
-        formatted_questions = question_generator.generate(text_content, questions_num, llm=selected_model)
+        # Используем генератор вопросов
+        formatted_questions = question_generator.generate(text_content, questions_num)
 
         # Возвращаем результат на фронтенд
         return jsonify({
             'status': 'success',
-            'questions': formatted_questions,
-            'model_used': selected_model
+            'questions': formatted_questions
         })
     except Exception as e:
         import traceback
