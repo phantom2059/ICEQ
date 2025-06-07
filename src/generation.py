@@ -14,6 +14,7 @@ from typing import Literal, List, Dict
 
 import re
 import os
+import json
 
 import torch
 import faiss
@@ -24,8 +25,39 @@ from sentence_transformers import SentenceTransformer
 from sklearn.cluster import KMeans
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
+from question_generator_api import generate_questions_deepseek, generate_questions_qwen
+import asyncio
 
-load_dotenv()
+# Загружаем переменные окружения с обработкой кодировок
+try:
+    # Явно указываем путь к .env в корневой директории
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir)
+    env_path = os.path.join(project_root, '.env')
+
+    if os.path.exists(env_path):
+        loaded_successfully = False
+        # Пробуем разные кодировки, чтобы справиться с BOM в Windows
+        for encoding in ['utf-8-sig', 'utf-16', 'utf-8', 'cp1251']:
+            try:
+                # override=True чтобы новые значения заменили старые, если они есть
+                if load_dotenv(dotenv_path=env_path, encoding=encoding, override=True):
+                    loaded_successfully = True
+                    break  # Выходим из цикла при успехе
+            except Exception:
+                continue # Пробуем следующую кодировку
+
+        if not loaded_successfully:
+            print("⚠️ Не удалось загрузить .env файл. Пожалуйста, сохраните его в кодировке UTF-8.")
+    else:
+        # Fallback, если .env не найден в корне
+        if load_dotenv(override=True):
+            print("ℹ️ .env файл в корне не найден, используется стандартный поиск.")
+        else:
+            print("⚠️ .env файл не найден ни в одном из стандартных мест.")
+
+except Exception as e:
+    print(f"⚠️ Критическая ошибка при загрузке .env: {e}")
 
 # Часть данных для кластеризации
 DATA_PART = 0.01
@@ -44,46 +76,40 @@ ICEQ_MODEL_NAME = 'iceq_model'
 
 def parse_questions(text_questions: str) -> list[dict]:
     """
-    Парсит текст с вопросами и ответами, возвращая структурированный список
-    
-    Функция анализирует текст в специальном формате и извлекает из него вопросы,
-    варианты ответов и объяснения для дальнейшего использования в тестах.
+    Парсит JSON с вопросами и возвращает структурированный список
     
     Args:
-        text_questions (str): Текст с вопросами в формате:
-            1. Текст вопроса?
-            + Правильный вариант ответа
-            - Неправильный вариант ответа 1
-            - Неправильный вариант ответа 2
-            - Неправильный вариант ответа 3
-            ! Объяснение (опционально)
-            
-            2. Следующий вопрос?
-            ...
+        text_questions (str): JSON текст с вопросами
     
     Returns:
-        list[dict]: Список структурированных вопросов в формате:
-            [
-                {
-                    'question': 'Текст вопроса?',
-                    'answers': [
-                        {'answer': 'Правильный ответ', 'is_correct': True},
-                        {'answer': 'Неправильный ответ', 'is_correct': False},
-                        ...
-                    ],
-                    'explanation': 'Объяснение к вопросу'
-                },
-                ...
-            ]
-    
-    Example:
-        >>> text = "1. Кто написал 'Войну и мир'?\\n+ Толстой\\n- Пушкин\\n- Достоевский"
-        >>> questions = parse_questions(text)
-        >>> print(questions[0]['question'])
-        'Кто написал 'Войну и мир'?'
+        list[dict]: Список структурированных вопросов
     """
-
-    # Регулярные выражения для парсинга различных элементов
+    try:
+        # Пытаемся распарсить как JSON
+        json_data = json.loads(text_questions)
+        
+        if isinstance(json_data, list):
+            questions = []
+            for item in json_data:
+                if 'question' in item and 'options' in item and 'correct_answer' in item:
+                    # Конвертируем в нужный формат
+                    answers = []
+                    for i, option in enumerate(item['options'], 1):
+                        answers.append({
+                            'answer': option,
+                            'is_correct': (i == item['correct_answer'])
+                        })
+                    
+                    questions.append({
+                        'question': item['question'],
+                        'answers': answers,
+                        'explanation': item.get('explanation', '')
+                    })
+            return questions
+    except json.JSONDecodeError:
+        pass
+    
+    # Если JSON не парсится, пробуем старый формат
     question_block_pattern = re.compile(r'(?ms)^\s*(\d+)\.\s*(.+?)(?=^\s*\d+\.\s|\Z)')
     answer_line_pattern = re.compile(r'^\s*([+-])\s*(.+)')
     explanation_line_pattern = re.compile(r'^\s*!\s*(.+)')
@@ -96,12 +122,10 @@ def parse_questions(text_questions: str) -> list[dict]:
         if not lines:
             continue
         
-        # Первая строка - текст вопроса
         question_text = lines[0].strip()
         answers = []
         explanation = ""
 
-        # Обрабатываем остальные строки для поиска ответов и объяснений
         for line in lines[1:]:
             line = line.strip()
             if not line:
@@ -111,17 +135,14 @@ def parse_questions(text_questions: str) -> list[dict]:
             explanation_match = explanation_line_pattern.match(line)
 
             if answer_match:
-                # Обрабатываем вариант ответа
                 sign, answer_text = answer_match.groups()
                 answers.append({
                     'answer': answer_text.strip(),
-                    'is_correct': (sign == '+')  # '+' означает правильный ответ
+                    'is_correct': (sign == '+')
                 })
             elif explanation_match:
-                # Обрабатываем объяснение
                 explanation = explanation_match.group(1).strip()
 
-        # Добавляем вопрос в результат только если есть варианты ответов
         if answers:
             questions.append({
                 'question': question_text,
@@ -200,7 +221,9 @@ class QuestionsGenerator:
         print(f'Используемое устройство: {self.device}')
 
         # Ленивая инициализация языковых моделей
-        self.deepseek_client = self.__init_deepseek() if 'deepseek' in init_llms else None
+        self.deepseek_available = self.__init_deepseek() if 'deepseek' in init_llms else False
+        # Клиент DeepSeek будет инициализирован при первом обращении
+        self.deepseek_client = None
         self.iceq_model = self.__init_iceq() if 'iceq' in init_llms else None
 
         # Загрузка моделей для обработки текста и эмбеддингов
@@ -222,18 +245,20 @@ class QuestionsGenerator:
         print('Промпты загружены.')
         print('Инициализация генератора завершена.')
 
-    def __init_deepseek(self) -> OpenAI:
+    def __init_deepseek(self) -> bool:
         """
-        Инициализирует клиент DeepSeek API
+        Проверяет наличие API ключа для DeepSeek
         
         Returns:
-            OpenAI: настроенный клиент для работы с DeepSeek API
+            bool: True если ключ найден, False если нет
         """
         api_key = os.getenv('DEEPSEEK_API_KEY')
-        self.deepseek_client = OpenAI(
-            api_key=api_key, base_url='https://api.deepseek.com'
-        )
-        print('Deepseek клиент инициализирован.')
+        if not api_key:
+            print("⚠️ DEEPSEEK_API_KEY не найден в переменных окружения для DeepSeek")
+            return False
+        
+        print('DeepSeek API ключ найден.')
+        return True
 
     def __init_iceq(self) -> None:
         """
@@ -402,6 +427,26 @@ class QuestionsGenerator:
                     print(f'Ошибка при работе с DeepSeek API: {e}')
                     return []
             
+            case 'qwen':
+                print('Генерация вопросов с помощью Qwen API...')
+                try:
+                    # Используем асинхронную функцию
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        response_text = loop.run_until_complete(
+                            generate_questions_qwen(text_content, questions_num)
+                        )
+                    finally:
+                        loop.close()
+                    
+                    questions = parse_questions(response_text)
+                    print(f"распарсилось вопросов: {len(questions)}")
+                    return questions
+                except Exception as e:
+                    print(f'Ошибка при работе с Qwen API: {e}')
+                    return []
+            
             case 'iceq':
                 print('Использование квантованной ICEQ Model...')
                 if self.iceq_model is None:
@@ -559,7 +604,7 @@ class QuestionsGenerator:
             self, 
             text: str, 
             questions_num: int,
-            llm: Literal['deepseek', 'iceq'] = 'iceq'
+            llm: Literal['deepseek', 'qwen', 'iceq'] = 'iceq'
     ) -> list[dict]:
 
         '''
@@ -568,9 +613,10 @@ class QuestionsGenerator:
         Параметры:
             text (str): текст, по которому надо задать вопросы
             questions_num (int): количество вопросов
-            llm (Literal['deepseek', 'iceq']), optional:
+            llm (Literal['deepseek', 'qwen', 'iceq']), optional:
                 языковая модель, используемая для генерации вопросов
                     - deepseek: использование DeepSeek API
+                    - qwen: использование Qwen API
                     - iceq: использование локальной предобученной модели
 
         Возвращаемое значение:
@@ -583,9 +629,16 @@ class QuestionsGenerator:
         if llm == 'iceq' and self.iceq_model is None:
             self.iceq_model = self.__init_iceq()
             if self.iceq_model is None:
-                raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' вместо 'iceq'.")
+                raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' или 'qwen' вместо 'iceq'.")
 
         print(f'Начало генерации {questions_num} вопросов...')
+        
+        # Запускаем таймер
+        import time
+        start_time = time.time()
+        
+        # Получаем оценку времени
+        time_estimate = self.estimate_generation_time(text, questions_num, llm)
 
         # Разделение текста на чанки и фильтрация
         chunks = text.split('\n')
@@ -693,8 +746,18 @@ class QuestionsGenerator:
 
         # Финальная статистика по времени
         actual_time = time.time() - start_time
+        
+        # Определяем полное название модели для красивого вывода
+        model_names = {
+            'deepseek': 'DeepSeek-V3',
+            'qwen': 'Qwen-3-235B',
+            'iceq': 'ICEQ (локальная)'
+        }
+        model_display = model_names.get(llm, llm.upper())
+        
         print()
         print(f'🎉 ГЕНЕРАЦИЯ ЗАВЕРШЕНА!')
+        print(f'   🤖 Модель: {model_display}')
         print(f'   ⏱️  Фактическое время: {actual_time:.1f} сек ({actual_time/60:.1f} мин)')
         print(f'   📈 Ожидалось: {time_estimate["estimated_seconds"]} сек')
         print(f'   📊 Разница: {actual_time - time_estimate["estimated_seconds"]:.1f} сек')

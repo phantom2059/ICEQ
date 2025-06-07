@@ -22,9 +22,12 @@ from flask import Flask, render_template, request, jsonify, send_file
 from generation import QuestionsGenerator
 import random
 
+# Отключаем автоматическую загрузку .env Flask-ом, чтобы избежать проблем с кодировкой
+os.environ.setdefault('FLASK_SKIP_DOTENV', '1')
+
 app = Flask(__name__)
 
-# Инициализация генератора вопросов (ICEQ отключена, жрет слишком много RAM)
+# Инициализация генератора вопросов (поддержка DeepSeek и Qwen API)
 question_generator = QuestionsGenerator(init_llms=['deepseek'])
 
 @app.route('/')
@@ -65,12 +68,13 @@ def generate_questions():
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
+        model = data.get('model', 'deepseek')  # По умолчанию используем deepseek
 
         # Get advanced settings if provided
         settings = data.get('settings', {})
 
         # Используем генератор вопросов
-        formatted_questions = question_generator.generate(text_content, questions_num)
+        formatted_questions = question_generator.generate(text_content, questions_num, llm=model)
 
         # Возвращаем результат на фронтенд
         return jsonify({
@@ -78,8 +82,6 @@ def generate_questions():
             'questions': formatted_questions
         })
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -113,8 +115,6 @@ def export_test():
         else:
             return jsonify({'status': 'error', 'message': 'Неподдерживаемый формат'}), 400
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         return jsonify({
             'status': 'error',
             'message': str(e)

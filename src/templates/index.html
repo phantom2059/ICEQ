@@ -100,6 +100,7 @@
                         <select id="model-select" class="model-select">
                             <option value="iceq">ICEQ (Локальная модель) - Временно отключена</option>
                             <option value="deepseek" selected>DeepSeek (Облачная модель)</option>
+                            <option value="qwen">Qwen (Облачная модель)</option>
                         </select>
                         <div class="model-info">
                             <p id="model-description">DeepSeek: Мощная облачная модель с улучшенным качеством генерации</p>
@@ -110,8 +111,8 @@
                         <div class="notification-box">
                             <span class="notification-icon">⚠️</span>
                             <div class="notification-content">
-                                <p><strong>Временно используется DeepSeek</strong></p>
-                                <p>ICEQ модель отключена. Используется DeepSeek API.</p>
+                                <p><strong>Доступны модели DeepSeek и Qwen</strong></p>
+                                <p>ICEQ модель отключена. Используйте облачные модели.</p>
                             </div>
                         </div>
                     </div>
@@ -155,30 +156,9 @@
                 <div class="card">
                     <h2>Генерация теста...</h2>
                     
-                    <!-- Индикатор времени -->
-                    <div class="time-estimate">
-                        <div class="time-info">
-                            <span class="time-label">⏱️ Ожидаемое время:</span>
-                            <span id="estimated-time">~10 сек</span>
-                        </div>
-                        <div class="time-info">
-                            <span class="time-label">📊 Анализируемый текст:</span>
-                            <span id="text-stats">Загрузка...</span>
-                        </div>
-                    </div>
-                    
                     <div class="loader-wrapper">
                         <div class="loader"></div>
                         <div class="loader-progress">0%</div>
-                    </div>
-                    
-                    <!-- Индикатор качества (добавляем недостающий элемент) -->
-                    <div class="quality-indicator">
-                        <span class="quality-label">Качество теста:</span>
-                        <div class="quality-bar">
-                            <div id="quality-fill" class="quality-fill"></div>
-                        </div>
-                        <span id="quality-score">85%</span>
                     </div>
                     
                     <div class="loading-stages">

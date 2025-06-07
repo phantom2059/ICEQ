@@ -123,10 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // DOM Elements для новых элементов
-    const estimatedTime = document.getElementById('estimated-time');
-    const textStats = document.getElementById('text-stats');
-
     // Quiz state
     let quizData = [];
     let currentQuestion = 0;
@@ -216,6 +212,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 modelDescription.style.color = '#ff9800';
             } else if (selectedModel === 'deepseek') {
                 modelDescription.textContent = 'DeepSeek: Мощная облачная модель с улучшенным качеством генерации';
+                modelDescription.style.color = '';
+            } else if (selectedModel === 'qwen') {
+                modelDescription.textContent = 'Qwen: Высокопроизводительная модель от Alibaba для генерации качественных вопросов';
                 modelDescription.style.color = '';
             }
         });
@@ -711,6 +710,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
+        // Show loading screen
         showScreen(loadingScreen);
         loadingLog.innerHTML = ''; // Clear previous logs
         loaderProgress.textContent = '0%';
@@ -720,34 +720,31 @@ document.addEventListener('DOMContentLoaded', function () {
             stage.classList.remove('active', 'completed');
         });
 
-        // Получаем оценку времени перед началом генерации
         const textToProcess = textContent.value;
         const numQuestions = parseInt(questionNumber.value) || 10;
         
-        estimateGenerationTime(textToProcess, numQuestions).then(() => {
-            // Activate the first stage
-            activateLoadingStage('analyze');
-            logMessage("Начинаем анализ текста...");
+        // Activate the first stage
+        activateLoadingStage('analyze');
+        logMessage("Начинаем анализ текста...");
 
-            // Update progress realistically
-            startRealisticProgress();
+        // Update progress realistically
+        startRealisticProgress();
 
-            // Update tests created counter for free mode
-            if (!isPremiumMode) {
-                testsCreatedToday++;
-                localStorage.setItem('testsCreatedToday', testsCreatedToday.toString());
-                localStorage.setItem('lastTestDate', new Date().toDateString());
-                updateFreeTestsLimit();
-            }
+        // Update tests created counter for free mode
+        if (!isPremiumMode) {
+            testsCreatedToday++;
+            localStorage.setItem('testsCreatedToday', testsCreatedToday.toString());
+            localStorage.setItem('lastTestDate', new Date().toDateString());
+            updateFreeTestsLimit();
+        }
 
-            if (activeTab === 'text') {
-                generateFromText(textToProcess);
-            } else {
-                const file = fileUpload.files[0];
-                logMessage(`Обработка файла: ${file.name}`);
-                generateFromText(textToProcess);
-            }
-        });
+        if (activeTab === 'text') {
+            generateFromText(textToProcess);
+        } else {
+            const file = fileUpload.files[0];
+            logMessage(`Обработка файла: ${file.name}`);
+            generateFromText(textToProcess);
+        }
     }
 
     // Realistic progress bar
@@ -860,130 +857,54 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Generate questions from text
     function generateFromText(textContent) {
-        // Show ad in free mode
-        if (!isPremiumMode && adContainer) {
-            adContainer.style.display = 'block';
-        } else if (adContainer) {
-            adContainer.style.display = 'none';
-        }
+        // Скрываем экран создания теста и показываем экран загрузки
+        showScreen(loadingScreen);
 
-        // In a real project, this would be an API request
+        const startTime = Date.now();
+        const questionNumber = parseInt(document.getElementById('question-number').value);
+        
+        // Получаем выбранную модель из селектора (или используем deepseek по умолчанию)
+        const modelSelect = document.getElementById('model-select');
+        const selectedModel = modelSelect ? modelSelect.value : 'deepseek';
+
+        startRealisticProgress();
+
         fetch('/generate', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 text: textContent,
-                questionNumber: parseInt(questionNumber.value) || 10,
-                model: selectedModel,
-                isPremium: isPremiumMode
-            }),
+                questionNumber: questionNumber,
+                model: selectedModel
+            })
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Ошибка HTTP! Статус: ${response.status}`);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                if (data.questions && data.questions.length > 0) {
-                    logMessage(`Успешно сгенерировано ${data.questions.length} вопросов`);
+                quizData = data.questions;
 
-                    quizData = data.questions;
-                    previewQuestionCount.textContent = quizData.length;
-                    updateQualityIndicator(testQuality);
+                // Показываем экран предварительного просмотра
+                showScreen(testPreviewScreen);
+                
+                // Теперь подготавливаем содержимое экрана
+                prepareTestPreview();
 
-                    currentQuestion = 0;
-                    userAnswers = Array(quizData.length).fill(null);
-                    correctCount = 0;
+                // Update test generation stats
+                if (!isPremiumMode) {
+                    testsCreatedToday++;
+                    localStorage.setItem('testsCreatedToday', testsCreatedToday.toString());
+                    updateFreeTestsLimit();
+                }
 
-                // Через секунду показываем экран предпросмотра
-                setTimeout(() => {
-                    showScreen(testPreviewScreen);
-                    prepareTestPreview();
-                }, 1000);
-
+                logMessage('Генерация завершена успешно!');
             } else {
-                logMessage("Не удалось сгенерировать вопросы. Попробуйте другой текст.");
-                setTimeout(() => showScreen(createTestScreen), 2000);
+                logMessage('Ошибка генерации: ' + data.message);
             }
         })
         .catch(error => {
-            logMessage(`Произошла ошибка: ${error.message}`);
-            logMessage("Генерирую тестовые вопросы для демонстрации...");
-
-            setTimeout(() => {
-                // Mock data for demonstration
-                const mockQuestions = [
-                    {
-                        question: "Какая планета самая большая в Солнечной системе?",
-                        answers: [
-                            { answer: "Земля", is_correct: false },
-                            { answer: "Юпитер", is_correct: true },
-                            { answer: "Сатурн", is_correct: false },
-                            { answer: "Марс", is_correct: false }
-                        ],
-                        explanation: "Юпитер является самой большой планетой в Солнечной системе с массой, в 318 раз превышающей массу Земли."
-                    },
-                    {
-                        question: "В каком году началась Первая мировая война?",
-                        answers: [
-                            { answer: "1914", is_correct: true },
-                            { answer: "1918", is_correct: false },
-                            { answer: "1939", is_correct: false },
-                            { answer: "1912", is_correct: false }
-                        ],
-                        explanation: "Первая мировая война началась 28 июля 1914 года и продолжалась до 11 ноября 1918 года."
-                    },
-                    {
-                        question: "Кто написал 'Война и мир'?",
-                        answers: [
-                            { answer: "Фёдор Достоевский", is_correct: false },
-                            { answer: "Лев Толстой", is_correct: true },
-                            { answer: "Антон Чехов", is_correct: false },
-                            { answer: "Иван Тургенев", is_correct: false }
-                        ],
-                        explanation: "Роман 'Война и мир' был написан Львом Николаевичем Толстым и опубликован в 1865-1869 годах."
-                    },
-                    {
-                        question: "Какой элемент имеет химический символ 'H'?",
-                        answers: [
-                            { answer: "Гелий", is_correct: false },
-                            { answer: "Водород", is_correct: true },
-                            { answer: "Ртуть", is_correct: false },
-                            { answer: "Гафний", is_correct: false }
-                        ],
-                        explanation: "Химический символ 'H' соответствует водороду (от латинского 'hydrogenium')."
-                    },
-                    {
-                        question: "Какой год считается годом основания Москвы?",
-                        answers: [
-                            { answer: "1147", is_correct: true },
-                            { answer: "1703", is_correct: false },
-                            { answer: "988", is_correct: false },
-                            { answer: "1237", is_correct: false }
-                        ],
-                        explanation: "Первое упоминание о Москве в летописях относится к 1147 году, когда Юрий Долгорукий пригласил в Москву своего союзника князя Святослава Ольговича."
-                    }
-                ];
-
-                logMessage("Создано 5 тестовых вопросов");
-
-                quizData = mockQuestions;
-                previewQuestionCount.textContent = quizData.length;
-                updateQualityIndicator(testQuality);
-
-                currentQuestion = 0;
-                userAnswers = Array(quizData.length).fill(null);
-                correctCount = 0;
-
-                setTimeout(() => {
-                    prepareTestPreview();
-                    showScreen(testPreviewScreen);
-                }, 1000);
-            }, 2000);
+            logMessage('Ошибка сети: ' + error.message);
         });
     }
 
@@ -1686,47 +1607,5 @@ document.addEventListener('DOMContentLoaded', function () {
         // Scroll to top of the visible screen
         appContainer.scrollTop = 0;
         scrollToActiveScreen();
-    }
-
-    // Получение оценки времени генерации
-    function estimateGenerationTime(textContent, questionNumber) {
-        return fetch('/estimate-time', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                text: textContent,
-                questionNumber: questionNumber
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const estimate = data.estimate;
-                
-                // Обновляем интерфейс
-                if (estimatedTime) {
-                    estimatedTime.textContent = `~${estimate.estimated_seconds} сек (${estimate.estimated_minutes} мин)`;
-                }
-                
-                if (textStats) {
-                    textStats.textContent = `${estimate.word_count} слов, ${estimate.text_length} символов`;
-                }
-                
-                logMessage(`⏱️ Ожидаемое время генерации: ~${estimate.estimated_seconds} секунд`);
-                logMessage(`📊 Анализ: ${estimate.word_count} слов, ${estimate.text_length} символов`);
-                
-                return estimate;
-            }
-            return null;
-        })
-        .catch(error => {
-            console.error('Ошибка при получении оценки времени:', error);
-            if (estimatedTime) {
-                estimatedTime.textContent = '~10 сек (приблизительно)';
-            }
-            return null;
-        });
     }
 });

@@ -651,6 +651,118 @@ h2 {
     margin-bottom: 50px;
 }
 
+/* Main Actions Group для экрана предпросмотра */
+.main-actions-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+    border: 2px solid transparent;
+    border-radius: 12px;
+    color: var(--text-primary);
+    padding: 20px 15px;
+    min-width: 140px;
+    height: 100px;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.3);
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+}
+
+.action-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 188, 212, 0.4);
+}
+
+.action-btn .btn-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: var(--accent-primary);
+    transition: color var(--transition-speed) ease;
+}
+
+.action-btn:hover .btn-icon {
+    color: white;
+}
+
+.action-btn .btn-text {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    transition: color var(--transition-speed) ease;
+}
+
+.action-btn:hover .btn-text {
+    color: white;
+}
+
+/* Премиум функция стили - убираем специальное оформление */
+.action-btn.premium-feature {
+    /* Используем те же стили, что и для обычных кнопок */
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+
+.action-btn.premium-feature .btn-icon {
+    color: var(--accent-primary);
+}
+
+.action-btn.premium-feature:hover {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    border-color: var(--accent-primary);
+}
+
+.action-btn.premium-feature:hover .btn-icon,
+.action-btn.premium-feature:hover .btn-text {
+    color: white;
+}
+
+/* Отзывчивость для мобильных устройств */
+@media (max-width: 768px) {
+    .main-actions-group {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .action-btn {
+        width: 100%;
+        max-width: 280px;
+        flex-direction: row;
+        justify-content: flex-start;
+        height: 70px;
+        padding: 15px 20px;
+    }
+    
+    .action-btn .btn-icon {
+        margin-bottom: 0;
+        margin-right: 15px;
+        font-size: 20px;
+    }
+    
+    .action-btn .btn-text {
+        text-align: left;
+    }
+}
+
 .action-card {
     display: flex;
     flex-direction: column;
@@ -1654,4 +1766,37 @@ body.premium-mode .premium-btn {
     .loading-stage .stage-icon {
         font-size: 16px;
     }
+}
+
+/* Test Options */
+.test-options {
+    margin: 25px 0;
+    padding: 20px;
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-primary);
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    user-select: none;
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+    accent-color: var(--accent-primary);
+}
+
+.test-preview-section {
+    margin-top: 30px;
+}
+
+.test-preview-section h3 {
+    margin-bottom: 15px;
+    color: var(--accent-primary);
+    font-size: 18px;
 }
