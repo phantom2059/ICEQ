@@ -97,11 +97,20 @@
 
                     <div class="model-selection premium-mode-only">
                         <label for="model-select">Модель генерации:</label>
-                        <select id="model-select" class="model-select">
-                            <option value="iceq">ICEQ (Локальная модель) - Временно отключена</option>
-                            <option value="deepseek" selected>DeepSeek (Облачная модель)</option>
-                            <option value="qwen">Qwen (Облачная модель)</option>
-                        </select>
+                        <div class="model-buttons-with-labels">
+                            <div class="model-btn-wrap">
+                                <button class="model-btn" data-model="iceq">ICEQ (Локальная модель) - Временно отключена</button>
+                                <div class="model-caption">Локальная, без интернета, но сейчас недоступна</div>
+                            </div>
+                            <div class="model-btn-wrap">
+                                <button class="model-btn active" data-model="deepseek">DeepSeek (Облачная модель)</button>
+                                <div class="model-caption">Рекомендуем: максимальное качество и скорость</div>
+                            </div>
+                            <div class="model-btn-wrap">
+                                <button class="model-btn" data-model="qwen">Qwen (Облачная модель)</button>
+                                <div class="model-caption">Альтернатива: иногда более креативные формулировки</div>
+                            </div>
+                        </div>
                         <div class="model-info">
                             <p id="model-description">DeepSeek: Мощная облачная модель с улучшенным качеством генерации</p>
                         </div>

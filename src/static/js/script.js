@@ -198,27 +198,37 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // Model selection handler
-    const modelSelect = document.getElementById('model-select');
+    const modelButtons = document.querySelectorAll('.model-btn');
+    const modelDescription = document.getElementById('model-description');
+    let selectedModel = 'deepseek';
 
-    if (modelSelect) {
-        modelSelect.addEventListener('change', function() {
-            const modelDescription = document.getElementById('model-description');
-            if (!modelDescription) return; // Элемента нет - ничего не делаем
-
-            const selectedModel = this.value;
-            if (selectedModel === 'iceq') {
-                modelDescription.textContent = 'ICEQ: Временно отключена (потребляет много RAM). Будет использоваться DeepSeek.';
-                modelDescription.style.color = '#ff9800';
-            } else if (selectedModel === 'deepseek') {
-                modelDescription.textContent = 'DeepSeek: Мощная облачная модель с улучшенным качеством генерации';
-                modelDescription.style.color = '';
-            } else if (selectedModel === 'qwen') {
-                modelDescription.textContent = 'Qwen: Высокопроизводительная модель от Alibaba для генерации качественных вопросов';
-                modelDescription.style.color = '';
-            }
-        });
+    // Для совместимости с сервером: создаём скрытый input
+    let modelHiddenInput = document.getElementById('model-select-hidden');
+    if (!modelHiddenInput) {
+        modelHiddenInput = document.createElement('input');
+        modelHiddenInput.type = 'hidden';
+        modelHiddenInput.id = 'model-select-hidden';
+        modelHiddenInput.name = 'model';
+        modelHiddenInput.value = selectedModel;
+        const modelSelection = document.querySelector('.model-selection');
+        if (modelSelection) modelSelection.appendChild(modelHiddenInput);
     }
+
+    const modelDescriptions = {
+        'iceq': 'ICEQ: Локальная модель (временно отключена)',
+        'deepseek': 'DeepSeek: Мощная облачная модель с улучшенным качеством генерации',
+        'qwen': 'Qwen: Альтернативная облачная модель для разнообразия результатов'
+    };
+
+    modelButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            modelButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            selectedModel = this.getAttribute('data-model');
+            modelDescription.textContent = modelDescriptions[selectedModel] || '';
+            modelHiddenInput.value = selectedModel;
+        });
+    });
 
     // Logo navigation
     logoHome.addEventListener('click', function() {
@@ -863,9 +873,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const startTime = Date.now();
         const questionNumber = parseInt(document.getElementById('question-number').value);
         
-        // Получаем выбранную модель из селектора (или используем deepseek по умолчанию)
-        const modelSelect = document.getElementById('model-select');
-        const selectedModel = modelSelect ? modelSelect.value : 'deepseek';
+        // Получаем выбранную модель из скрытого поля (или используем deepseek по умолчанию)
+        const modelHiddenInput = document.getElementById('model-select-hidden');
+        const selectedModelValue = modelHiddenInput ? modelHiddenInput.value : selectedModel;
 
         startRealisticProgress();
 
@@ -877,7 +887,7 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({
                 text: textContent,
                 questionNumber: questionNumber,
-                model: selectedModel
+                model: selectedModelValue
             })
         })
         .then(response => response.json())

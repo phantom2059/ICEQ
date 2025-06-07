@@ -1807,3 +1807,101 @@ body.premium-mode .premium-btn {
     color: var(--accent-primary);
     font-size: 18px;
 }
+
+/* стайлы кнопок новых(вместо списка) */
+.model-buttons {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.model-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #181a1b;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+    position: relative;
+    min-width: 220px;
+    text-align: center;
+    z-index: 1;
+    filter: brightness(0.92);
+}
+
+.model-btn:hover {
+    background: linear-gradient(135deg, #FFC300 0%, #FFD700 100%);
+    color: #000;
+    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.25);
+}
+
+.model-btn.active {
+    background: linear-gradient(135deg, #FFB300 0%, #FFD700 100%);
+    color: #181a1b;
+    box-shadow: 0 0 0 5px #ffb300, 0 0 16px 4px #ffb30099;
+    border: 3.5px solid #FF9100;
+    z-index: 2;
+    filter: none;
+    position: relative;
+}
+
+.model-btn.active::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+    border-radius: 12px;
+    box-shadow: 0 0 0 4px #fffbe6cc;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.model-btn[data-model="iceq"] {
+    padding: 8px 16px;
+    background: #23272b;
+    color: #b3b3b3;
+    font-weight: 400;
+    font-size: 14px;
+    box-shadow: none;
+    border: 1px solid #444;
+    opacity: 0.7;
+    min-width: 180px;
+}
+
+.model-btn[data-model="iceq"]:hover,
+.model-btn[data-model="iceq"].active {
+    background: #404040;
+    color: #b3b3b3;
+    box-shadow: none;
+}
+
+.model-buttons-with-labels {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 18px;
+    margin-bottom: 15px;
+    align-items: flex-start;
+}
+.model-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 220px;
+}
+.model-caption {
+    margin-top: 7px;
+    font-size: 13px;
+    color: #bfa700;
+    text-align: center;
+    line-height: 1.2;
+    max-width: 210px;
+    opacity: 0.92;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
