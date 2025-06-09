@@ -1,0 +1,787 @@
+/* ===================================
+   ICEQ (2025) - Базовые стили
+   =================================== */
+
+/* Переменные для цветов и размеров - ТЕМНАЯ тема (по умолчанию) */
+:root {
+    /* Цветовая схема */
+    --primary-color: #00bcd4;
+    --primary-dark: #00acc1;
+    --secondary-color: #6c757d;
+    --success-color: #4caf50;
+    --danger-color: #ff5722;
+    --warning-color: #ff9800;
+    --info-color: #2196f3;
+    
+    /* Размеры */
+    --header-height: 70px;
+    --footer-height: 50px;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    
+    /* Переходы - ускорено */
+    --transition: all 0.15s ease;
+    
+    /* Шрифты */
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    
+    /* Темная тема (по умолчанию) */
+    --bg-color: #0d1117;
+    --card-bg: #161b22;
+    --text-color: #c9d1d9;
+    --text-muted: #8b949e;
+    --border-color: #30363d;
+}
+
+/* Светлая тема */
+[data-theme="light"] {
+    --bg-color: #fafafa;
+    --card-bg: #ffffff;
+    --text-color: #2c2c2c;
+    --text-muted: #6c757d;
+    --border-color: #e8e8e8;
+    --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    --primary-color: #0288d1;
+}
+
+/* Основные стили */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    background: linear-gradient(135deg, var(--bg-color) 0%, var(--card-bg) 50%, var(--bg-color) 100%);
+    color: var(--text-color);
+    line-height: 1.6;
+    transition: var(--transition);
+    padding-top: var(--header-height);
+    padding-bottom: var(--footer-height);
+    min-height: 100vh;
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at top, rgba(0, 188, 212, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(0, 188, 212, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* Улучшения для светлой темы */
+[data-theme="light"] body::before {
+    background: radial-gradient(ellipse at top, rgba(2, 136, 209, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(2, 136, 209, 0.03) 0%, transparent 50%);
+}
+
+/* Заголовок */
+.fixed-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 100%;
+}
+
+.logo {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition);
+    letter-spacing: 2px;
+    cursor: pointer;
+}
+
+.logo:hover {
+    transform: translateY(-2px);
+    color: var(--primary-dark);
+}
+
+.premium-btn {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #212121;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform var(--transition) ease, box-shadow var(--transition) ease;
+    border: none;
+}
+
+.premium-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(255, 165, 0, 0.5);
+}
+
+/* Подвал */
+.fixed-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--footer-height);
+    background: var(--card-bg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.about-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: var(--transition);
+}
+
+.about-link:hover {
+    color: var(--primary-color);
+}
+
+/* Header actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Переключатель темы */
+.theme-toggle {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    z-index: 1000;
+}
+
+.theme-button {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-button:hover {
+    transform: scale(1.1);
+    border-color: var(--primary-color);
+}
+
+.sun-icon, .moon-icon {
+    font-size: 24px;
+    position: absolute;
+    transition: all 0.3s ease;
+}
+
+/* Светлая тема - показываем луну (для переключения на темную) */
+[data-theme="light"] .sun-icon {
+    opacity: 0;
+    transform: scale(0.5) rotate(180deg);
+}
+
+[data-theme="light"] .moon-icon {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+/* Темная тема - показываем солнце (для переключения на светлую) */
+[data-theme="dark"] .sun-icon {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+}
+
+[data-theme="dark"] .moon-icon {
+    opacity: 0;
+    transform: scale(0.5) rotate(-180deg);
+}
+
+/* Кнопка поддержки */
+.support-btn {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+    z-index: 1000;
+    transition: var(--transition);
+    box-shadow: var(--box-shadow);
+}
+
+.support-btn:hover {
+    background: var(--primary-dark);
+    transform: scale(1.1);
+}
+
+/* Главный контейнер */
+.app-container {
+    min-height: calc(100vh - var(--header-height) - var(--footer-height));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Карточки */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--box-shadow);
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+h1 {
+    font-size: 28px;
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+}
+
+/* Кнопки */
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    transition: var(--transition);
+    min-width: 120px;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.primary-btn {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+.secondary-btn {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.secondary-btn:hover:not(:disabled) {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.success-btn {
+    background: var(--success-color);
+    color: white;
+}
+
+.danger-btn {
+    background: var(--danger-color);
+    color: white;
+}
+
+/* Формы */
+input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    font-family: var(--font-family);
+    background: var(--card-bg);
+    color: var(--text-color);
+    transition: var(--transition);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
+}
+
+/* Модальные окна */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 30px;
+    max-width: 1100px;
+    width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.show .modal-content {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: var(--transition);
+}
+
+.modal-close:hover {
+    color: var(--danger-color);
+}
+
+/* Уведомления */
+.toast-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 15px;
+    min-width: 300px;
+    box-shadow: var(--box-shadow);
+    animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+    border-left: 4px solid var(--success-color);
+}
+
+.toast.error {
+    border-left: 4px solid var(--danger-color);
+}
+
+.toast.warning {
+    border-left: 4px solid var(--warning-color);
+}
+
+.toast.info {
+    border-left: 4px solid var(--info-color);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .app-container {
+        padding: 10px;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+    
+    .header-content {
+        padding: 0 15px;
+    }
+    
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+    }
+    
+    .theme-toggle {
+        bottom: 70px;
+        left: 15px;
+    }
+    
+    .theme-button {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .sun-icon, .moon-icon {
+        font-size: 20px;
+    }
+    
+    .support-btn {
+        bottom: 70px;
+        right: 15px;
+        width: 45px;
+        height: 45px;
+        font-size: 16px;
+    }
+}
+
+/* Модальное окно ценообразования */
+.pricing-modal {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.pricing-header h3 {
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.pricing-header p {
+    color: var(--text-muted);
+}
+
+.pricing-plans {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: stretch;
+}
+
+.plan {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+    border: 2px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+
+.plan.current-plan {
+    border-color: var(--success-color);
+    background: linear-gradient(135deg, var(--card-bg), rgba(76, 175, 80, 0.1));
+}
+
+.current-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--success-color);
+    color: white;
+    padding: 5px 15px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.plan:hover {
+    transform: translateY(-5px);
+}
+
+.plan h4 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.plan .price {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.plan .price span {
+    font-size: 1rem;
+    color: var(--text-muted);
+}
+
+.plan ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+    flex-grow: 1;
+}
+
+.plan ul li {
+    margin-bottom: 0.8rem;
+    color: var(--text-color);
+}
+
+.plan ul li::before {
+    content: "✓";
+    margin-right: 0.5rem;
+    color: var(--primary-color);
+}
+
+.premium-plan {
+    background: linear-gradient(135deg, var(--card-bg) 0%, var(--primary-color) 100%);
+    border-color: var(--primary-color);
+}
+
+.select-plan-btn {
+    width: 100%;
+    height: 50px;
+    padding: 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: auto;
+}
+
+.free-plan .select-plan-btn {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 2px solid var(--border-color);
+}
+
+.free-plan .select-plan-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.premium-plan .select-plan-btn {
+    background: var(--primary-color);
+    color: white;
+}
+
+.premium-plan .select-plan-btn:hover {
+    filter: brightness(1.1);
+}
+
+.current-plan-btn {
+    background: var(--success-color) !important;
+    color: white !important;
+    border-color: var(--success-color) !important;
+    cursor: default !important;
+}
+
+.current-plan-btn:hover {
+    background: var(--success-color) !important;
+    transform: none !important;
+    filter: none !important;
+}
+
+/* Стили для кнопки премиум в шапке */
+#premium-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: #000;
+}
+
+#premium-btn.active {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+}
+
+#premium-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+}
+
+/* Активированный премиум */
+.premium-active-info {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.premium-status-card {
+    background: linear-gradient(135deg, var(--success-color), #45a049);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.status-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.premium-status-card h4 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.premium-status-card p {
+    margin-bottom: 1.5rem;
+    opacity: 0.9;
+}
+
+.premium-features-active {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.feature-active {
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    font-size: 0.95rem;
+}
+
+.feature-active::before {
+    content: "";
+    margin-right: 0.5rem;
+}
+
+.premium-actions {
+    margin-top: 1.5rem;
+}
+
+.premium-deactivate {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.premium-deactivate:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Адаптивность для модального окна ценообразования */
+@media (max-width: 768px) {
+    .pricing-plans {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .pricing-modal {
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .modal-content {
+        padding: 20px;
+        width: 95%;
+        max-width: 95%;
+    }
+    
+    .plan {
+        padding: 20px 15px;
+    }
+    
+    .plan .price {
+        font-size: 24px;
+    }
+    
+    .premium-status-card {
+        padding: 1.5rem;
+    }
+    
+    .status-icon {
+        font-size: 2.5rem;
+    }
+}

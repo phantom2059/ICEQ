@@ -171,7 +171,7 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
         with open(user_prompt_path, 'r', encoding='utf8') as f:
             user_prompt_template = f.read()
             
-        print("Промпты загружены из файлов")
+        print("📋 Промпты загружены из файлов")
         
     except FileNotFoundError as e:
         print(f"❌ Ошибка загрузки промптов: {e}")
@@ -183,6 +183,14 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
     # Формируем пользовательский промпт, заменяя плейсхолдеры
     user_prompt = user_prompt_template.replace('[QUESTIONS_NUM]', str(num_questions))
     user_prompt = user_prompt.replace('[CHUNKS]', text)
+    
+    # Логирование того, что отправляем в API
+    print("🔍 === ЛОГИРОВАНИЕ ЗАПРОСА К DEEPSEEK API ===")
+    print(f"📊 Количество вопросов: {num_questions}")
+    print(f"📝 Длина входного текста: {len(text)} символов")
+    print(f"📄 Системный промпт (первые 200 символов): {system_prompt[:200]}...")
+    print(f"👤 Пользовательский промпт (первые 300 символов): {user_prompt[:300]}...")
+    print("🌐 Отправка запроса к DeepSeek API...")
     
     # Формируем тело запроса к API
     body = {
@@ -202,6 +210,7 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
     }
 
     full_response = ""
+    response_chunks = 0
     
     # Выполняем асинхронный запрос к API
     async with aiohttp.ClientSession() as session:
@@ -211,16 +220,20 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
                 json=body
         ) as response:
             # Проверяем статус ответа
+            print(f"🔗 Статус ответа API: {response.status}")
             if response.status != 200:
                 error_text = await response.text()
+                print(f"❌ Ошибка API: {response.status} - {error_text}")
                 raise Exception(f"Ошибка API DeepSeek: {response.status} - {error_text}")
                 
+            print("📡 Получение потокового ответа...")
             # Обрабатываем потоковый ответ
             async for line in response.content:
                 line = line.decode("utf-8").strip()
                 if line.startswith("data: "):
                     data = line[6:]  # Убираем префикс "data: "
                     if data == "[DONE]":
+                        print("✅ Получен сигнал завершения от API")
                         break
                     try:
                         # Парсим JSON чанк
@@ -230,9 +243,25 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
                             if 'content' in delta and delta['content']:
                                 content = delta['content']
                                 full_response += content
+                                response_chunks += 1
                     except json.JSONDecodeError:
                         # Пропускаем некорректные JSON чанки
                         continue
+    
+    # Логирование полученного ответа
+    print("🔍 === ЛОГИРОВАНИЕ ОТВЕТА ОТ DEEPSEEK API ===")
+    print(f"📊 Всего получено чанков: {response_chunks}")
+    print(f"📝 Длина итогового ответа: {len(full_response)} символов")
+    print(f"📄 Начало ответа (первые 500 символов): {full_response[:500]}...")
+    if len(full_response) > 500:
+        print(f"📄 Конец ответа (последние 200 символов): ...{full_response[-200:]}")
+    
+    if not full_response.strip():
+        print("⚠️ ВНИМАНИЕ: Получен пустой ответ от API!")
+    else:
+        print("✅ Ответ от DeepSeek API успешно получен")
+    
+    print("=== КОНЕЦ ЛОГИРОВАНИЯ DEEPSEEK API ===")
     
     return full_response
 
@@ -275,7 +304,7 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
         with open(user_prompt_path, 'r', encoding='utf8') as f:
             user_prompt_template = f.read()
             
-        print("Промпты загружены из файлов")
+        print("📋 Промпты загружены из файлов")
         
     except FileNotFoundError as e:
         print(f"❌ Ошибка загрузки промптов: {e}")
@@ -287,6 +316,14 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
     # Формируем пользовательский промпт
     user_prompt = user_prompt_template.replace('[QUESTIONS_NUM]', str(num_questions))
     user_prompt = user_prompt.replace('[CHUNKS]', text)
+    
+    # Логирование того, что отправляем в API
+    print("🔍 === ЛОГИРОВАНИЕ ЗАПРОСА К QWEN API ===")
+    print(f"📊 Количество вопросов: {num_questions}")
+    print(f"📝 Длина входного текста: {len(text)} символов")
+    print(f"📄 Системный промпт (первые 200 символов): {system_prompt[:200]}...")
+    print(f"👤 Пользовательский промпт (первые 300 символов): {user_prompt[:300]}...")
+    print("🌐 Отправка запроса к Qwen API...")
     
     # Формируем тело запроса к API
     body = {
@@ -306,6 +343,7 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
     }
 
     full_response = ""
+    response_chunks = 0
     
     # Выполняем асинхронный запрос к API
     async with aiohttp.ClientSession() as session:
@@ -315,16 +353,20 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
                 json=body
         ) as response:
             # Проверяем статус ответа
+            print(f"🔗 Статус ответа API: {response.status}")
             if response.status != 200:
                 error_text = await response.text()
+                print(f"❌ Ошибка API: {response.status} - {error_text}")
                 raise Exception(f"Ошибка API Qwen: {response.status} - {error_text}")
                 
+            print("📡 Получение потокового ответа...")
             # Обрабатываем потоковый ответ
             async for line in response.content:
                 line = line.decode("utf-8").strip()
                 if line.startswith("data: "):
                     data = line[6:]  # Убираем префикс "data: "
                     if data == "[DONE]":
+                        print("✅ Получен сигнал завершения от API")
                         break
                     try:
                         # Парсим JSON чанк
@@ -334,9 +376,25 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
                             if 'content' in delta and delta['content']:
                                 content = delta['content']
                                 full_response += content
+                                response_chunks += 1
                     except json.JSONDecodeError:
                         # Пропускаем некорректные JSON чанки
                         continue
+    
+    # Логирование полученного ответа
+    print("🔍 === ЛОГИРОВАНИЕ ОТВЕТА ОТ QWEN API ===")
+    print(f"📊 Всего получено чанков: {response_chunks}")
+    print(f"📝 Длина итогового ответа: {len(full_response)} символов")
+    print(f"📄 Начало ответа (первые 500 символов): {full_response[:500]}...")
+    if len(full_response) > 500:
+        print(f"📄 Конец ответа (последние 200 символов): ...{full_response[-200:]}")
+    
+    if not full_response.strip():
+        print("⚠️ ВНИМАНИЕ: Получен пустой ответ от API!")
+    else:
+        print("✅ Ответ от Qwen API успешно получен")
+    
+    print("=== КОНЕЦ ЛОГИРОВАНИЯ QWEN API ===")
     
     return full_response
 

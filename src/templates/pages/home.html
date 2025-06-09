@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}ICEQ - Главная{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/home.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <div class="welcome-section">
+        <h1>ICEQ</h1>
+        <p class="subtitle">Умная генерация тестов с использованием ИИ</p>
+        <p class="description">
+            Превращайте любой текст в интерактивные тесты и викторины с помощью 
+            передовых технологий машинного обучения
+        </p>
+    </div>
+
+    <div class="main-actions">
+        <a href="/create" class="action-card" id="create-test-btn">
+            <div class="card-icon">
+                <span>✨</span>
+            </div>
+            <div class="card-content">
+                <h3>Создать тест</h3>
+                <p>Сгенерируйте вопросы из любого текста</p>
+            </div>
+            <div class="card-arrow">→</div>
+        </a>
+
+        <a href="/take" class="action-card" id="take-test-btn">
+            <div class="card-icon">
+                <span>📋</span>
+            </div>
+            <div class="card-content">
+                <h3>Пройти тест</h3>
+                <p>Загрузите готовый тест для прохождения</p>
+            </div>
+            <div class="card-arrow">→</div>
+        </a>
+    </div>
+
+    <div class="features-preview">
+        <div class="feature-item">
+            <div class="feature-icon">🚀</div>
+            <div class="feature-text">
+                <h4>GPU ускорение</h4>
+                <p>Быстрая генерация с использованием видеокарты</p>
+            </div>
+        </div>
+        
+        <div class="feature-item">
+            <div class="feature-icon">🤖</div>
+            <div class="feature-text">
+                <h4>Несколько ИИ моделей</h4>
+                <p>ICEQ, DeepSeek, Qwen на выбор</p>
+            </div>
+        </div>
+        
+        <div class="feature-item">
+            <div class="feature-icon">📁</div>
+            <div class="feature-text">
+                <h4>Разные форматы</h4>
+                <p>TXT, DOC, DOCX, PDF файлы</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-section" class="stats-section">
+        <div class="stat-item">
+            <div class="stat-number" data-target="150">0</div>
+            <div class="stat-label">Тестов создано</div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-number" data-target="2340">0</div>
+            <div class="stat-label">Вопросов сгенерировано</div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-number" data-target="98">0</div>
+            <div class="stat-label">% точности</div>
+        </div>
+    </div>
+
+    <div id="free-tests-limit" class="limit-notice">
+        <div class="limit-content">
+            <span class="limit-icon">⚡</span>
+            <span class="limit-text">Загружаем статистику...</span>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/pages/home.js') }}"></script>
+{% endblock %} 
