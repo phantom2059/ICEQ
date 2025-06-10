@@ -460,7 +460,7 @@ class QuestionsGenerator:
             central_objects: центральные объекты из objects в каждом кластере
         '''
         
-        print('Поиск центральных объектов для кластеров...')
+        print('[GENERATION] Finding central objects for clusters')
         centroids = kmeans.cluster_centers_
         labels = kmeans.labels_
         distances = np.linalg.norm(embeddings - centroids[labels], axis=1)
@@ -715,7 +715,7 @@ class QuestionsGenerator:
             if self.iceq_model is None:
                 raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' или 'qwen' вместо 'iceq'.")
 
-        print(f'Начало генерации {questions_num} вопросов...')
+        print(f'[GENERATION] Starting generation of {questions_num} questions')
         
         # Простая проверка: разделяем текст на параграфы и смотрим, хватит ли для вопросов
         initial_chunks = text.split('\n\n')  # Разделяем по двойным переносам (параграфы)
@@ -750,11 +750,11 @@ class QuestionsGenerator:
         # Фильтруем слишком короткие чанки
         chunks = list(filter(lambda chunk: self.__filter_chunks(chunk, min_words_in_chunk), chunks))
         chunks = np.array(chunks)
-        print(f'Получено {len(chunks)} чанков после фильтрации.')
+        print(f'[GENERATION] Filtered chunks: {len(chunks)}')
 
         # Если чанков слишком мало, используем упрощенную генерацию
         if len(chunks) < MIN_CLUSTERS_NUM:
-            print(f'Чанков слишком мало ({len(chunks)}), используем упрощенную генерацию...')
+            print(f'[GENERATION] Too few chunks ({len(chunks)}), using simplified generation')
             # Используем оптимизированный метод для ICEQ
             if llm == 'iceq':
                 questions = self.__generate_iceq(text, questions_num)
@@ -766,14 +766,14 @@ class QuestionsGenerator:
                 return self.__get_questions(llm, prompt, questions_num)
 
         # Вычисление эмбеддингов для кластеризации чанков
-        print('Вычисление эмбеддингов для кластеризации...')
+        print('[GENERATION] Computing clustering embeddings')
         clustering_embeddings = self.__clustering_model.encode(
             chunks,
             convert_to_tensor=True,
             normalize_embeddings=True,
             device=self.device
         ).cpu().numpy()
-        print('Эмбеддинги для кластеризации вычислены.')
+        print('[GENERATION] Clustering embeddings computed')
 
         # Определение оптимального количества кластеров
         paragraph_num = len(text.split('\n'))
@@ -781,33 +781,33 @@ class QuestionsGenerator:
             MAX_CLUSTERS_NUM,
             max(MIN_CLUSTERS_NUM, int(paragraph_num * DATA_PART))
         )
-        print(f'Количество кластеров: {clusters_num}')
+        print(f'[GENERATION] Number of clusters: {clusters_num}')
 
         # Выполнение K-means кластеризации
-        print('Запуск K-means кластеризации...')
+        print('[GENERATION] Running K-means clustering')
         kmeans = KMeans(n_clusters=clusters_num, random_state=42)
         kmeans.fit(clustering_embeddings)
-        print('Кластеризация завершена.')
+        print('[GENERATION] Clustering completed')
 
         # Поиск центральных объектов в каждом кластере
         target_chunks = self.__get_central_objects(kmeans, clustering_embeddings, chunks)
-        print(f'Найдено {len(target_chunks)} центральных чанков')
+        print(f'[GENERATION] Found {len(target_chunks)} central chunks')
         
         # Объединяем отобранные чанки для генерации
         text_for_generation = '\n\n'.join(target_chunks)
         
-        print('Отправка запроса к модели...')
+        print('[GENERATION] Sending request to model')
         questions = self.__get_questions(llm, text_for_generation, questions_num)
-        print(f'Получено {len(questions) if questions else 0} вопросов')
+        print(f'[GENERATION] Received {len(questions) if questions else 0} questions')
 
         # Если вопросы не были сгенерированы, возвращаем пустой список
         if not questions:
-            print('Ошибка: вопросы не были сгенерированы')
+            print('[GENERATION] Error: no questions generated')
             return []
 
         try:
             # Добавление объяснений через семантический поиск
-            print('Извлечение эмбеддингов...')
+            print('[GENERATION] Extracting embeddings for explanations')
             doc_embeddings = self.__search_model.encode(
                 target_chunks,
                 prompt_name='search_document',
@@ -821,7 +821,7 @@ class QuestionsGenerator:
 
             # Проверка корректности эмбеддингов
             if query_embeddings is None or len(query_embeddings.shape) < 2 or query_embeddings.shape[0] == 0:
-                print("Ошибка создания эмбеддингов")
+                print('[GENERATION] Error creating embeddings')
                 raise ValueError("Некорректные эмбеддинги для запроса")
 
             # Создание FAISS индекса для быстрого поиска похожих чанков
@@ -838,7 +838,7 @@ class QuestionsGenerator:
                     question['explanation'] = str(explanation_chunk[0])
                 
         except Exception as e:
-            print(f'Ошибка при добавлении объяснений: {e}')
+            print(f'[GENERATION] Error adding explanations: {e}')
             # Возвращаем вопросы без объяснений при ошибке
             for q in questions:
                 if not q.get('explanation'):
@@ -846,7 +846,7 @@ class QuestionsGenerator:
 
         # Финальная статистика по времени
         actual_time = time.time() - start_time
-        print(f'Генерация завершена за {actual_time:.1f} сек, получено {len(questions)} вопросов')
+        print(f'[GENERATION] Generation completed in {actual_time:.1f}s, generated {len(questions)} questions')
 
         # Логируем статистику создания теста
         try:

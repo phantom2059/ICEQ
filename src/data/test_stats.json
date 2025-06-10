@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "created_at": "2025-06-11T01:17:19.293819",
+  "last_updated": "2025-06-11T01:23:41.659615",
+  "total_tests": 8,
+  "test_records": [
+    {
+      "timestamp": "2025-06-11T01:17:19.293819",
+      "unix_timestamp": 1749579439,
+      "text_chars_count": 649,
+      "model_used": "deepseek",
+      "questions_generated": 5,
+      "generation_time_seconds": 17.46,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 37.17,
+      "questions_per_minute": 17.18
+    },
+    {
+      "timestamp": "2025-06-11T01:17:19.297326",
+      "unix_timestamp": 1749579439,
+      "text_chars_count": 649,
+      "model_used": "deepseek",
+      "questions_generated": 5,
+      "generation_time_seconds": 17.46,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 37.16,
+      "questions_per_minute": 17.18
+    },
+    {
+      "timestamp": "2025-06-11T01:18:39.726842",
+      "unix_timestamp": 1749579519,
+      "text_chars_count": 649,
+      "model_used": "deepseek",
+      "questions_generated": 12,
+      "generation_time_seconds": 20.51,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 31.65,
+      "questions_per_minute": 35.11
+    },
+    {
+      "timestamp": "2025-06-11T01:18:39.728842",
+      "unix_timestamp": 1749579519,
+      "text_chars_count": 649,
+      "model_used": "deepseek",
+      "questions_generated": 12,
+      "generation_time_seconds": 20.51,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 31.64,
+      "questions_per_minute": 35.1
+    },
+    {
+      "timestamp": "2025-06-11T01:20:44.753672",
+      "unix_timestamp": 1749579644,
+      "text_chars_count": 23739,
+      "model_used": "deepseek",
+      "questions_generated": 10,
+      "generation_time_seconds": 69.81,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 340.06,
+      "questions_per_minute": 8.59
+    },
+    {
+      "timestamp": "2025-06-11T01:20:44.755175",
+      "unix_timestamp": 1749579644,
+      "text_chars_count": 23739,
+      "model_used": "deepseek",
+      "questions_generated": 10,
+      "generation_time_seconds": 69.81,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 340.05,
+      "questions_per_minute": 8.59
+    },
+    {
+      "timestamp": "2025-06-11T01:23:41.656615",
+      "unix_timestamp": 1749579821,
+      "text_chars_count": 23739,
+      "model_used": "deepseek",
+      "questions_generated": 5,
+      "generation_time_seconds": 60.5,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 392.35,
+      "questions_per_minute": 4.96
+    },
+    {
+      "timestamp": "2025-06-11T01:23:41.659615",
+      "unix_timestamp": 1749579821,
+      "text_chars_count": 23739,
+      "model_used": "deepseek",
+      "questions_generated": 5,
+      "generation_time_seconds": 60.51,
+      "file_size_bytes": 0,
+      "text_type": "text",
+      "chars_per_second": 392.34,
+      "questions_per_minute": 4.96
+    }
+  ],
+  "model_stats": {
+    "deepseek": {
+      "usage_count": 8,
+      "total_chars": 97552,
+      "total_questions": 64,
+      "total_time": 336.5752999782562,
+      "avg_time_per_char": 0.00345,
+      "avg_questions_per_test": 8.0
+    }
+  }
+}

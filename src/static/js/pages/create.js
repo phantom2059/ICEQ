@@ -721,39 +721,32 @@ class CreateTestPage {
     }
     
     async startGeneration() {
-        console.log('🚀 [GENERATION] Запуск генерации теста...');
+        console.log('[GENERATION] Starting test generation');
         
         if (this.isGenerating) {
-            console.log('❌ [GENERATION] Генерация уже запущена, выходим');
+            console.log('[GENERATION] Generation already in progress');
             return;
         }
 
         // Проверяем, есть ли текст
         const text = this.textArea.value.trim();
-        console.log('📝 [GENERATION] Проверка текста:', {
-            textLength: text.length,
-            hasText: !!text,
-            textPreview: text.substring(0, 100) + (text.length > 100 ? '...' : '')
-        });
+        console.log('[GENERATION] Text validation - length:', text.length);
         
         if (!text) {
-            console.log('❌ [GENERATION] Нет текста для генерации');
+            console.log('[GENERATION] No text provided for generation');
             window.iceqBase.showToast('Введите текст для генерации теста', 'warning');
             return;
         }
 
-        console.log('⚙️ [GENERATION] Устанавливаем флаг генерации');
         this.isGenerating = true;
         this.updateButtonsState();
         
         try {
-            console.log('🔄 [GENERATION] Показываем экран загрузки');
             // Показываем загрузочный экран
             if (this.loadingOverlay) {
                 this.loadingOverlay.style.display = 'flex';
-                console.log('✅ [GENERATION] Экран загрузки показан');
             } else {
-                console.log('⚠️ [GENERATION] Экран загрузки не найден');
+                console.warn('[GENERATION] Loading overlay not found');
             }
             
             // Получаем информацию о файле для статистики
@@ -785,19 +778,17 @@ class CreateTestPage {
                 textType: textType
             };
             
-            console.log('⚙️ [GENERATION] Настройки генерации:', settings);
+            console.log('[GENERATION] Settings:', settings);
             
             window.iceqBase.showToast('Начинаем генерацию теста...', 'info');
             
             // Проверяем API
-            console.log('🔍 [GENERATION] Проверка доступности API...');
             if (!window.iceqBase || !window.iceqBase.fetchAPI) {
                 throw new Error('API недоступен');
             }
-            console.log('✅ [GENERATION] API доступен');
             
             // Отправляем запрос на генерацию
-            console.log('📡 [GENERATION] Отправляем запрос на сервер...');
+            console.log('[GENERATION] Sending API request');
             const response = await window.iceqBase.fetchAPI('/generate', {
                 method: 'POST',
                 headers: {
@@ -806,13 +797,13 @@ class CreateTestPage {
                 body: JSON.stringify(settings)
             });
             
-            console.log('📥 [GENERATION] Получен ответ от сервера:', response);
+            console.log('[GENERATION] API response received:', response.status);
             
             if (response.status === 'success') {
-                console.log('✅ [GENERATION] Тест успешно создан');
-                console.log('📊 [GENERATION] Сгенерированные вопросы:', response.questions);
+                console.log('[GENERATION] Test created successfully');
+                console.log('[GENERATION] Questions generated:', response.questions.length);
                 
-                // Сохраняем тест в localStorage для прохождения
+                // Сохраняем тест в localStorage для предпросмотра и прохождения
                 const testData = {
                     questions: response.questions,
                     settings: settings,
@@ -820,35 +811,35 @@ class CreateTestPage {
                     id: Date.now().toString()
                 };
                 
+                // Сохраняем для предпросмотра
+                localStorage.setItem('iceq_generated_test', JSON.stringify(testData));
+                // Также сохраняем для прохождения (если пользователь решит пройти тест сразу)
                 localStorage.setItem('iceq_current_test', JSON.stringify(testData));
-                console.log('💾 [GENERATION] Тест сохранен для прохождения');
+                console.log('[GENERATION] Test data saved to localStorage');
                 
                 // Обновляем счетчик тестов
                 this.decrementTestLimit();
                 
-                window.iceqBase.showToast('Тест успешно создан! Начинаем прохождение...', 'success');
+                window.iceqBase.showToast('Тест успешно создан! Переходим к предпросмотру...', 'success');
                 
-                // Переходим сразу к прохождению теста
-                console.log('🔄 [GENERATION] Переходим к прохождению теста');
-                window.location.href = '/take';
+                // Переходим к предпросмотру теста
+                console.log('[GENERATION] Redirecting to preview');
+                window.location.href = '/preview';
             } else {
                 throw new Error(response.message || 'Неизвестная ошибка сервера');
             }
 
         } catch (error) {
-            console.error('❌ [GENERATION] Ошибка генерации:', error);
-            console.error('❌ [GENERATION] Stack trace:', error.stack);
+            console.error('[GENERATION] Generation error:', error.message);
             window.iceqBase.showToast(error.message || 'Ошибка генерации теста', 'error');
         } finally {
-            console.log('🏁 [GENERATION] Финализация генерации');
+            console.log('[GENERATION] Generation process finished');
             this.isGenerating = false;
             this.updateButtonsState();
             
             if (this.loadingOverlay) {
-                console.log('🔄 [GENERATION] Скрываем экран загрузки');
                 this.loadingOverlay.style.display = 'none';
             }
-            console.log('✅ [GENERATION] Генерация завершена');
         }
     }
     

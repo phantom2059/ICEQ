@@ -92,6 +92,16 @@ def preview_test():
     """
     return render_template('pages/preview.html')
 
+@app.route('/edit')
+def edit_test():
+    """
+    Страница редактирования вопросов теста
+    
+    Returns:
+        str: HTML-страница редактирования теста
+    """
+    return render_template('pages/edit.html')
+
 @app.route('/premium/toggle', methods=['POST'])
 def toggle_premium():
     """

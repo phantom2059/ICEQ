@@ -84,6 +84,26 @@ class TakeTestPage {
     }
     
     checkForTestId() {
+        // Сначала проверяем есть ли сгенерированный тест в localStorage
+        console.log('[TAKE] Checking for generated test in localStorage');
+        const generatedTest = localStorage.getItem('iceq_current_test');
+        
+        if (generatedTest) {
+            try {
+                const testData = JSON.parse(generatedTest);
+                if (testData.questions && testData.questions.length > 0) {
+                    console.log('[TAKE] Found generated test, starting automatically');
+                    this.questions = testData.questions;
+                    this.startTest();
+                    return;
+                }
+            } catch (error) {
+                console.error('[TAKE] Error loading generated test:', error);
+                // Очищаем поврежденные данные
+                localStorage.removeItem('iceq_current_test');
+            }
+        }
+        
         // Проверяем URL на наличие ID теста
         const urlParams = new URLSearchParams(window.location.search);
         const testId = urlParams.get('id');
@@ -274,6 +294,8 @@ class TakeTestPage {
     }
     
     startTest() {
+        console.log('[TAKE] Starting test with', this.questions.length, 'questions');
+        
         this.currentScreen = 'test';
         this.uploadScreen.style.display = 'none';
         this.testScreen.style.display = 'block';

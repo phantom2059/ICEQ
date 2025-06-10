@@ -11,14 +11,14 @@ class PreviewTestPage {
     }
     
     init() {
-        console.log('🏗️ [PREVIEW] Инициализация страницы предпросмотра...');
+        console.log('[PREVIEW] Initializing preview page');
         
         this.initElements();
         this.checkPremiumStatus();
         this.loadTestData();
         this.initEventListeners();
         
-        console.log('✅ [PREVIEW] Инициализация завершена');
+        console.log('[PREVIEW] Preview page initialized');
     }
     
     initElements() {
@@ -42,24 +42,24 @@ class PreviewTestPage {
     }
     
     loadTestData() {
-        console.log('📊 [PREVIEW] Загрузка данных теста...');
+        console.log('[PREVIEW] Loading test data');
         
         try {
             const savedData = localStorage.getItem('iceq_generated_test');
             if (!savedData) {
-                console.error('❌ [PREVIEW] Нет сохраненных данных теста');
+                console.error('[PREVIEW] No test data found');
                 this.showError('Данные теста не найдены', 'Вернитесь к созданию теста');
                 return;
             }
             
             this.testData = JSON.parse(savedData);
-            console.log('✅ [PREVIEW] Данные теста загружены:', this.testData);
+            console.log('[PREVIEW] Test data loaded, questions:', this.testData.questions.length);
             
             this.fillTestInfo();
             this.showPreview(); // Сразу показываем предпросмотр
             
         } catch (error) {
-            console.error('❌ [PREVIEW] Ошибка загрузки данных:', error);
+            console.error('[PREVIEW] Data loading error:', error);
             this.showError('Ошибка загрузки данных', 'Попробуйте создать тест заново');
         }
     }
@@ -217,7 +217,7 @@ class PreviewTestPage {
     }
     
     startTest() {
-        console.log('🚀 [PREVIEW] Запуск теста...');
+        console.log('[PREVIEW] Starting test');
         
         if (!this.testData) {
             if (window.iceqBase) {
@@ -231,7 +231,7 @@ class PreviewTestPage {
             localStorage.setItem('iceq_current_test', JSON.stringify(this.testData));
             window.location.href = '/take';
         } catch (error) {
-            console.error('❌ [PREVIEW] Ошибка сохранения данных для теста:', error);
+            console.error('[PREVIEW] Error starting test:', error);
             if (window.iceqBase) {
                 window.iceqBase.showToast('Ошибка запуска теста', 'error');
             }
@@ -239,7 +239,7 @@ class PreviewTestPage {
     }
     
     editTest() {
-        console.log('✏️ [PREVIEW] Редактирование теста...');
+        console.log('[PREVIEW] Opening test editor');
         
         if (!this.isPremium) {
             if (window.iceqBase) {
@@ -253,7 +253,7 @@ class PreviewTestPage {
     }
     
     exportTest() {
-        console.log('📁 [PREVIEW] Экспорт теста...');
+        console.log('[PREVIEW] Exporting test');
         
         if (!this.testData) {
             if (window.iceqBase) {
