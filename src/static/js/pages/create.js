@@ -756,11 +756,33 @@ class CreateTestPage {
                 console.log('⚠️ [GENERATION] Экран загрузки не найден');
             }
             
+            // Получаем информацию о файле для статистики
+            let fileSize = 0;
+            let textType = 'text';
+            
+            if (this.fileInput && this.fileInput.files && this.fileInput.files.length > 0) {
+                const file = this.fileInput.files[0];
+                fileSize = file.size;
+                const fileName = file.name.toLowerCase();
+                
+                if (fileName.endsWith('.pdf')) {
+                    textType = 'pdf';
+                } else if (fileName.endsWith('.docx')) {
+                    textType = 'docx';
+                } else if (fileName.endsWith('.txt')) {
+                    textType = 'txt';
+                } else {
+                    textType = 'file';
+                }
+            }
+            
             // Получаем настройки
             const settings = {
                 text: text,
                 questionNumber: parseInt(this.questionsInput.value) || 10,
-                model: this.selectedModel || 'iceq'
+                model: this.selectedModel || 'iceq',
+                fileSize: fileSize,
+                textType: textType
             };
             
             console.log('⚙️ [GENERATION] Настройки генерации:', settings);
@@ -790,7 +812,7 @@ class CreateTestPage {
                 console.log('✅ [GENERATION] Тест успешно создан');
                 console.log('📊 [GENERATION] Сгенерированные вопросы:', response.questions);
                 
-                // Сохраняем тест в localStorage для предпросмотра
+                // Сохраняем тест в localStorage для прохождения
                 const testData = {
                     questions: response.questions,
                     settings: settings,
@@ -798,17 +820,17 @@ class CreateTestPage {
                     id: Date.now().toString()
                 };
                 
-                localStorage.setItem('iceq_generated_test', JSON.stringify(testData));
-                console.log('💾 [GENERATION] Тест сохранен для предпросмотра');
+                localStorage.setItem('iceq_current_test', JSON.stringify(testData));
+                console.log('💾 [GENERATION] Тест сохранен для прохождения');
                 
                 // Обновляем счетчик тестов
                 this.decrementTestLimit();
                 
-                window.iceqBase.showToast('Тест успешно создан!', 'success');
+                window.iceqBase.showToast('Тест успешно создан! Начинаем прохождение...', 'success');
                 
-                // Переходим на страницу предпросмотра
-                console.log('🔄 [GENERATION] Переходим на страницу предпросмотра');
-                window.location.href = '/preview';
+                // Переходим сразу к прохождению теста
+                console.log('🔄 [GENERATION] Переходим к прохождению теста');
+                window.location.href = '/take';
             } else {
                 throw new Error(response.message || 'Неизвестная ошибка сервера');
             }

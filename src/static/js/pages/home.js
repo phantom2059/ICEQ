@@ -64,13 +64,44 @@ class HomePage {
     // navigateTo() больше не нужна
 
     /**
-     * Инициализация анимации статистики
+     * Инициализация анимированных счетчиков
      */
     initStatsAnimation() {
-        const statsSection = document.getElementById('stats-section');
-        const statNumbers = document.querySelectorAll('.stat-number');
+        // Ждем загрузки Counter.js
+        if (!window.AnimatedCounter) {
+            setTimeout(() => this.initStatsAnimation(), 100);
+            return;
+        }
+        
+        // Создаем анимированные счетчики
+        this.counters = {
+            tests: window.createCounter('#tests-counter', {
+                value: 0,
+                size: 'large',
+                theme: 'primary',
+                duration: 800,
+                fontSize: 48
+            }),
+            questions: window.createCounter('#questions-counter', {
+                value: 0,
+                size: 'large',
+                theme: 'success',
+                duration: 1000,
+                fontSize: 48
+            }),
+            accuracy: window.createCounter('#accuracy-counter', {
+                value: 0,
+                size: 'large',
+                theme: 'info',
+                duration: 1200,
+                fontSize: 48
+            })
+        };
+        
+        console.log('✅ [STATS] Анимированные счетчики созданы:', this.counters);
         
         // Создаем наблюдатель для анимации при появлении в области видимости
+        const statsSection = document.getElementById('stats-section');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -86,17 +117,32 @@ class HomePage {
     }
 
     /**
-     * Анимация цифр статистики
+     * Анимация счетчиков статистики
      */
     animateStats() {
-        const statNumbers = document.querySelectorAll('.stat-number');
+        console.log('🎬 [STATS] Запускаем анимацию счетчиков...');
         
-        statNumbers.forEach(element => {
-            const target = parseInt(element.getAttribute('data-target'));
-            const duration = 1000;
-            
-            window.iceqBase.animateNumber(element, 0, target, duration);
-        });
+        // Анимируем счетчики с задержкой
+        setTimeout(() => {
+            if (this.counters.tests) {
+                const target = parseInt(document.getElementById('tests-counter').getAttribute('data-target')) || 150;
+                this.counters.tests.setValue(target);
+            }
+        }, 200);
+        
+        setTimeout(() => {
+            if (this.counters.questions) {
+                const target = parseInt(document.getElementById('questions-counter').getAttribute('data-target')) || 2340;
+                this.counters.questions.setValue(target);
+            }
+        }, 400);
+        
+        setTimeout(() => {
+            if (this.counters.accuracy) {
+                const target = parseInt(document.getElementById('accuracy-counter').getAttribute('data-target')) || 98;
+                this.counters.accuracy.setValue(target);
+            }
+        }, 600);
     }
 
     /**
@@ -216,12 +262,30 @@ class HomePage {
      * Обновление отображения статистики
      */
     updateStatsDisplay(stats) {
-        const statsElements = document.querySelectorAll('.stat-number');
+        console.log('📊 [STATS] Обновляем счетчики:', stats);
         
-        if (statsElements.length >= 3) {
-            statsElements[0].setAttribute('data-target', stats.testsCreated);
-            statsElements[1].setAttribute('data-target', stats.questionsGenerated);
-            // Процент точности остается константой
+        // Обновляем значения счетчиков
+        if (this.counters) {
+            if (this.counters.tests && stats.testsCreated !== undefined) {
+                this.counters.tests.setValue(stats.testsCreated);
+                document.getElementById('tests-counter').setAttribute('data-target', stats.testsCreated);
+            }
+            
+            if (this.counters.questions && stats.questionsGenerated !== undefined) {
+                this.counters.questions.setValue(stats.questionsGenerated);
+                document.getElementById('questions-counter').setAttribute('data-target', stats.questionsGenerated);
+            }
+            
+            // Процент точности остается константой (98%)
+            if (this.counters.accuracy) {
+                this.counters.accuracy.setValue(98);
+                document.getElementById('accuracy-counter').setAttribute('data-target', 98);
+            }
+        } else {
+            // Если счетчики еще не созданы, просто обновляем data-target
+            document.getElementById('tests-counter')?.setAttribute('data-target', stats.testsCreated || 0);
+            document.getElementById('questions-counter')?.setAttribute('data-target', stats.questionsGenerated || 0);
+            document.getElementById('accuracy-counter')?.setAttribute('data-target', 98);
         }
     }
 

@@ -21,12 +21,14 @@ from flask import Flask, render_template, request, jsonify, send_file
 
 try:
     from generation import QuestionsGenerator
+    from stats_logger import stats_logger
 except ImportError:
     # Если запускаем из директории src
     import sys
     import os
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from generation import QuestionsGenerator
+    from stats_logger import stats_logger
 
 # Отключаем автоматическую загрузку .env Flask-ом, чтобы избежать проблем с кодировкой
 os.environ.setdefault('FLASK_SKIP_DOTENV', '1')
@@ -107,6 +109,18 @@ def toggle_premium():
         'message': 'Премиум режим включен!' if premium_active else 'Премиум режим отключен!'
     })
 
+@app.route('/api/premium_status', methods=['GET'])
+def api_premium_status():
+    """
+    API endpoint для проверки статуса премиум режима
+    
+    Returns:
+        JSON: статус премиума
+    """
+    return jsonify({
+        'premium_active': premium_active
+    })
+
 @app.route('/premium/status', methods=['GET'])
 def premium_status():
     """
@@ -147,9 +161,10 @@ def estimate_time():
         data = request.get_json()
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
+        model = data.get('model', 'iceq')
         
         # Получаем оценку времени
-        time_estimate = question_generator.estimate_generation_time(text_content, questions_num, 'iceq')
+        time_estimate = question_generator.estimate_generation_time(text_content, questions_num, model)
         
         return jsonify({
             'status': 'success',
@@ -180,6 +195,10 @@ def generate_questions():
         text_content = data.get('text', '')
         questions_num = int(data.get('questionNumber', 10))
         model = data.get('model', 'deepseek')
+        
+        # Данные для статистики
+        file_size_bytes = data.get('fileSize', 0)
+        text_type = data.get('textType', 'text')  # text, pdf, docx, txt
 
         # Проверяем ограничения
         max_questions = premium_features['max_questions'] if premium_active else 10
@@ -197,8 +216,15 @@ def generate_questions():
                 'message': f'Модель {model} доступна только в Премиум режиме!'
             }), 400
 
+        # Запускаем таймер для статистики
+        import time
+        start_time = time.time()
+        
         # Используем генератор вопросов
         formatted_questions = question_generator.generate(text_content, questions_num, llm=model)
+
+        # Финальное время генерации
+        generation_time = time.time() - start_time
 
         # КРИТИЧЕСКАЯ ОТЛАДКА: проверяем что получили от генератора
         print(f"🔍 === ОТЛАДКА В APP.PY ===")
@@ -209,6 +235,20 @@ def generate_questions():
         else:
             print("❌ КРИТИЧНО: Генератор вернул пустой список!")
         print("=== КОНЕЦ ОТЛАДКИ В APP.PY ===")
+
+        # Логируем дополнительную статистику (вызов из веба)
+        try:
+            stats_logger.log_test_creation(
+                text_chars_count=len(text_content),
+                model_used=model,
+                questions_generated=len(formatted_questions) if formatted_questions else 0,
+                generation_time=generation_time,
+                file_size_bytes=file_size_bytes,
+                text_type=text_type
+            )
+        except Exception:
+            # Молча игнорируем ошибки логирования
+            pass
 
         # Возвращаем результат на фронтенд
         return jsonify({

@@ -69,17 +69,17 @@
 
     <div id="stats-section" class="stats-section">
         <div class="stat-item">
-            <div class="stat-number" data-target="150">0</div>
+            <div class="stat-number-container" id="tests-counter" data-target="150"></div>
             <div class="stat-label">Тестов создано</div>
         </div>
         
         <div class="stat-item">
-            <div class="stat-number" data-target="2340">0</div>
+            <div class="stat-number-container" id="questions-counter" data-target="2340"></div>
             <div class="stat-label">Вопросов сгенерировано</div>
         </div>
         
         <div class="stat-item">
-            <div class="stat-number" data-target="98">0</div>
+            <div class="stat-number-container" id="accuracy-counter" data-target="98"></div>
             <div class="stat-label">% точности</div>
         </div>
     </div>
@@ -96,5 +96,6 @@
 {% endblock %}
 
 {% block page_js %}
+<script src="{{ url_for('static', filename='js/components/Counter.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pages/home.js') }}"></script>
 {% endblock %} 

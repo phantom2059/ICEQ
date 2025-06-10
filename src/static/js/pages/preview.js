@@ -5,7 +5,7 @@
 class PreviewTestPage {
     constructor() {
         this.testData = null;
-        this.isPreviewVisible = false;
+        this.isPremium = false;
         
         this.init();
     }
@@ -14,6 +14,7 @@ class PreviewTestPage {
         console.log('🏗️ [PREVIEW] Инициализация страницы предпросмотра...');
         
         this.initElements();
+        this.checkPremiumStatus();
         this.loadTestData();
         this.initEventListeners();
         
@@ -28,19 +29,13 @@ class PreviewTestPage {
         
         // Кнопки действий
         this.startTestBtn = document.getElementById('start-test-btn');
-        this.togglePreviewBtn = document.getElementById('toggle-preview-btn');
         this.editTestBtn = document.getElementById('edit-test-btn');
         this.exportTestBtn = document.getElementById('export-test-btn');
         this.createNewBtn = document.getElementById('create-new-btn');
         
         // Элементы предпросмотра
         this.questionsPreview = document.getElementById('questions-preview');
-        this.hidePreviewBtn = document.getElementById('hide-preview-btn');
         this.questionsList = document.getElementById('questions-list');
-        this.collapseAllBtn = document.getElementById('collapse-all-btn');
-        this.expandAllBtn = document.getElementById('expand-all-btn');
-        
-
         
         // Индикатор загрузки
         this.loadingIndicator = document.getElementById('loading-indicator');
@@ -61,6 +56,7 @@ class PreviewTestPage {
             console.log('✅ [PREVIEW] Данные теста загружены:', this.testData);
             
             this.fillTestInfo();
+            this.showPreview(); // Сразу показываем предпросмотр
             
         } catch (error) {
             console.error('❌ [PREVIEW] Ошибка загрузки данных:', error);
@@ -115,10 +111,6 @@ class PreviewTestPage {
             this.startTestBtn.addEventListener('click', () => this.startTest());
         }
         
-        if (this.togglePreviewBtn) {
-            this.togglePreviewBtn.addEventListener('click', () => this.togglePreview());
-        }
-        
         if (this.editTestBtn) {
             this.editTestBtn.addEventListener('click', () => this.editTest());
         }
@@ -130,38 +122,13 @@ class PreviewTestPage {
         if (this.createNewBtn) {
             this.createNewBtn.addEventListener('click', () => this.createNewTest());
         }
-        
-        // Предпросмотр
-        if (this.hidePreviewBtn) {
-            this.hidePreviewBtn.addEventListener('click', () => this.hidePreview());
-        }
-        
-        if (this.collapseAllBtn) {
-            this.collapseAllBtn.addEventListener('click', () => this.collapseAllQuestions());
-        }
-        
-        if (this.expandAllBtn) {
-            this.expandAllBtn.addEventListener('click', () => this.expandAllQuestions());
-        }
-        
-
-    }
-    
-    togglePreview() {
-        console.log('👁️ [PREVIEW] Переключение предпросмотра...');
-        
-        if (this.isPreviewVisible) {
-            this.hidePreview();
-        } else {
-            this.showPreview();
-        }
     }
     
     showPreview() {
         console.log('👁️ [PREVIEW] Показываем предпросмотр вопросов...');
         
         if (!this.testData || !this.testData.questions) {
-            window.iceqBase.showToast('Нет данных для предпросмотра', 'error');
+            console.error('❌ [PREVIEW] Нет данных для предпросмотра');
             return;
         }
         
@@ -181,14 +148,6 @@ class PreviewTestPage {
                 
                 // Показываем предпросмотр
                 this.questionsPreview.style.display = 'block';
-                this.isPreviewVisible = true;
-                
-                // Обновляем кнопку
-                this.togglePreviewBtn.querySelector('.btn-text').textContent = 'Скрыть вопросы';
-                this.togglePreviewBtn.querySelector('.btn-icon').textContent = '🙈';
-                
-                // Плавная прокрутка к предпросмотру
-                this.questionsPreview.scrollIntoView({ behavior: 'smooth' });
                 
                 this.hideLoading();
                 console.log('✅ [PREVIEW] Предпросмотр показан');
@@ -196,159 +155,164 @@ class PreviewTestPage {
             } catch (error) {
                 console.error('❌ [PREVIEW] Ошибка отображения предпросмотра:', error);
                 this.hideLoading();
-                window.iceqBase.showToast('Ошибка отображения вопросов', 'error');
+                if (window.iceqBase) {
+                    window.iceqBase.showToast('Ошибка отображения вопросов', 'error');
+                }
             }
-        }, 500); // Небольшая задержка для демонстрации загрузки
-    }
-    
-    hidePreview() {
-        console.log('🙈 [PREVIEW] Скрываем предпросмотр...');
-        
-        this.questionsPreview.style.display = 'none';
-        this.isPreviewVisible = false;
-        
-        // Обновляем кнопку
-        this.togglePreviewBtn.querySelector('.btn-text').textContent = 'Показать вопросы';
-        this.togglePreviewBtn.querySelector('.btn-icon').textContent = '👁️';
+        }, 500);
     }
     
     createQuestionElement(question, index) {
-        // Создаем в стиле оригинального ICEQ
-        const questionItem = document.createElement('div');
-        questionItem.className = 'question-item';
-
-        const heading = document.createElement('h4');
-        heading.textContent = `Вопрос ${index}`;
-        questionItem.appendChild(heading);
-
-        const questionContent = document.createElement('div');
-        questionContent.className = 'question-content';
-        questionContent.textContent = question.question;
-        questionItem.appendChild(questionContent);
-
-        const answersList = document.createElement('ul');
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-item';
+        
+        // Заголовок вопроса
+        const questionTitle = document.createElement('h4');
+        questionTitle.textContent = `Вопрос ${index}`;
+        questionDiv.appendChild(questionTitle);
+        
+        // Текст вопроса
+        const questionText = document.createElement('div');
+        questionText.className = 'question-text';
+        questionText.textContent = question.question;
+        questionDiv.appendChild(questionText);
+        
+        // Список ответов
+        const answersList = document.createElement('div');
         answersList.className = 'answers-list';
-
-        question.answers.forEach(answer => {
-            const answerItem = document.createElement('li');
-            answerItem.className = `answer-item ${answer.is_correct ? 'correct-answer' : ''}`;
-
-            const answerMarker = document.createElement('span');
-            answerMarker.className = `answer-marker ${answer.is_correct ? 'correct-marker' : ''}`;
-            answerMarker.textContent = answer.is_correct ? '✓' : '';
-            answerItem.appendChild(answerMarker);
-
+        
+        question.answers.forEach((answer, answerIndex) => {
+            const answerItem = document.createElement('div');
+            answerItem.className = 'answer-item';
+            
+            // Проверяем правильность ответа
+            if (answer.correct || answer.is_correct) {
+                answerItem.classList.add('correct-answer');
+            }
+            
+            const marker = document.createElement('span');
+            marker.className = 'answer-marker';
+            marker.textContent = String.fromCharCode(65 + answerIndex); // A, B, C, D
+            
             const answerText = document.createElement('span');
-            answerText.textContent = answer.answer;
+            answerText.className = 'answer-text';
+            answerText.textContent = answer.text || answer.answer;
+            
+            answerItem.appendChild(marker);
             answerItem.appendChild(answerText);
-
             answersList.appendChild(answerItem);
         });
-        questionItem.appendChild(answersList);
-
+        
+        questionDiv.appendChild(answersList);
+        
+        // Объяснение (если есть)
         if (question.explanation) {
             const explanation = document.createElement('div');
             explanation.className = 'explanation';
             explanation.textContent = `Объяснение: ${question.explanation}`;
-            questionItem.appendChild(explanation);
+            questionDiv.appendChild(explanation);
         }
-
-        return questionItem;
-    }
-    
-    collapseAllQuestions() {
-        document.querySelectorAll('.question-item').forEach(item => {
-            item.classList.remove('expanded');
-        });
-    }
-    
-    expandAllQuestions() {
-        document.querySelectorAll('.question-item').forEach(item => {
-            item.classList.add('expanded');
-        });
+        
+        return questionDiv;
     }
     
     startTest() {
-        console.log('🚀 [PREVIEW] Запуск прохождения теста...');
+        console.log('🚀 [PREVIEW] Запуск теста...');
         
         if (!this.testData) {
-            window.iceqBase.showToast('Нет данных теста для прохождения', 'error');
+            if (window.iceqBase) {
+                window.iceqBase.showToast('Данные теста не найдены', 'error');
+            }
             return;
         }
         
-        // Сохраняем данные для страницы прохождения теста
-        localStorage.setItem('iceq_test_to_take', JSON.stringify(this.testData));
-        
-        // Переходим на страницу прохождения
-        window.location.href = '/take';
+        // Сохраняем данные в localStorage и перенаправляем на страницу прохождения теста
+        try {
+            localStorage.setItem('iceq_current_test', JSON.stringify(this.testData));
+            window.location.href = '/take';
+        } catch (error) {
+            console.error('❌ [PREVIEW] Ошибка сохранения данных для теста:', error);
+            if (window.iceqBase) {
+                window.iceqBase.showToast('Ошибка запуска теста', 'error');
+            }
+        }
     }
     
     editTest() {
-        console.log('✏️ [PREVIEW] Переход к редактированию теста...');
+        console.log('✏️ [PREVIEW] Редактирование теста...');
         
-        // Функция редактирования пока не реализована
-        window.iceqBase.showToast('Функция редактирования в разработке', 'info');
-    }
-    
-
-    
-    exportTest() {
-        console.log('💾 [PREVIEW] Экспорт теста в JSON...');
-        
-        if (!this.testData) {
-            window.iceqBase.showToast('Нет данных для экспорта', 'error');
+        if (!this.isPremium) {
+            if (window.iceqBase) {
+                window.iceqBase.showToast('Редактирование вопросов доступно только с премиум подпиской', 'warning');
+            }
             return;
         }
         
-        // Создаем JSON как в оригинале
-        const testDataToExport = {
-            title: 'ICEQ Тест',
-            dateCreated: new Date().toISOString(),
-            questions: this.testData.questions
+        // Если у пользователя премиум - открываем редактор
+        this.openTestEditor();
+    }
+    
+    exportTest() {
+        console.log('📁 [PREVIEW] Экспорт теста...');
+        
+        if (!this.testData) {
+            if (window.iceqBase) {
+                window.iceqBase.showToast('Нет данных для экспорта', 'error');
+            }
+            return;
+        }
+        
+        // Создаем JSON для экспорта
+        const exportData = {
+            title: this.testData.title || 'Тест ICEQ',
+            questions: this.testData.questions,
+            createdAt: this.testData.createdAt,
+            settings: this.testData.settings
         };
-
-        const json = JSON.stringify(testDataToExport, null, 2);
-        const blob = new Blob([json], {type: 'application/json'});
+        
+        // Создаем файл для скачивания
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ICEQ-Test_${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `iceq-test-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        window.iceqBase.showToast('Тест скачан в формате JSON!', 'success');
+        if (window.iceqBase) {
+            window.iceqBase.showToast('Тест успешно экспортирован', 'success');
+        }
     }
     
     createNewTest() {
         console.log('✨ [PREVIEW] Создание нового теста...');
         
-        // Очищаем сохраненные данные
+        // Очищаем сохраненные данные и переходим к созданию
         localStorage.removeItem('iceq_generated_test');
-        
-        // Переходим на страницу создания
         window.location.href = '/create';
     }
     
     showError(title, message) {
-        // Показываем ошибку вместо контента
-        document.querySelector('.preview-container').innerHTML = `
+        console.error(`❌ [PREVIEW] ${title}: ${message}`);
+        
+        const container = document.querySelector('.preview-container');
+        container.innerHTML = `
             <div class="error-container">
-                <div class="error-icon">❌</div>
+                <div class="error-icon">😞</div>
                 <h2>${title}</h2>
                 <p>${message}</p>
-                <a href="/create" class="btn primary-btn">
-                    <span class="btn-icon">✨</span>
-                    <span class="btn-text">Создать тест</span>
-                </a>
+                <button class="btn primary-btn" onclick="window.location.href='/create'">
+                    Создать новый тест
+                </button>
             </div>
         `;
     }
     
     showLoading() {
         if (this.loadingIndicator) {
-            this.loadingIndicator.style.display = 'flex';
+            this.loadingIndicator.style.display = 'block';
         }
     }
     
@@ -357,18 +321,67 @@ class PreviewTestPage {
             this.loadingIndicator.style.display = 'none';
         }
     }
+    
+    async checkPremiumStatus() {
+        try {
+            const response = await fetch('/api/premium_status', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.isPremium = data.premium_active || false;
+                this.updateUIForPremiumStatus();
+            } else {
+                this.isPremium = false;
+            }
+        } catch (error) {
+            console.error('❌ [PREVIEW] Ошибка проверки премиум статуса:', error);
+            this.isPremium = false;
+        }
+    }
+    
+    updateUIForPremiumStatus() {
+        if (this.editTestBtn) {
+            if (!this.isPremium) {
+                // Добавляем класс для отображения как премиум функция
+                this.editTestBtn.classList.add('premium-feature');
+                
+                // Добавляем иконку премиума
+                const icon = this.editTestBtn.querySelector('.btn-icon');
+                if (icon && !icon.querySelector('.premium-indicator')) {
+                    const premiumIndicator = document.createElement('span');
+                    premiumIndicator.className = 'premium-indicator';
+                    premiumIndicator.innerHTML = '⭐';
+                    premiumIndicator.title = 'Премиум функция';
+                    icon.appendChild(premiumIndicator);
+                }
+            }
+        }
+    }
+    
+    openTestEditor() {
+        console.log('🛠️ [PREVIEW] Открытие редактора теста...');
+        
+        if (!this.testData) {
+            if (window.iceqBase) {
+                window.iceqBase.showToast('Данные теста не найдены', 'error');
+            }
+            return;
+        }
+        
+        // Сохраняем данные для редактирования
+        localStorage.setItem('iceq_test_for_edit', JSON.stringify(this.testData));
+        
+        // Перенаправляем на страницу редактирования
+        window.location.href = '/edit';
+    }
 }
 
-// Инициализация страницы при загрузке
-window.addEventListener('DOMContentLoaded', () => {
-    console.log('🌟 [GLOBAL] DOM загружен, начинаем инициализацию страницы предпросмотра...');
-    
-    try {
-        window.previewTestPage = new PreviewTestPage();
-        console.log('🎉 [GLOBAL] Страница предпросмотра инициализирована успешно!');
-        
-    } catch (error) {
-        console.error('💥 [GLOBAL] КРИТИЧЕСКАЯ ОШИБКА при инициализации:', error);
-        console.error('💥 [GLOBAL] Stack trace:', error.stack);
-    }
+// Инициализация при загрузке DOM
+document.addEventListener('DOMContentLoaded', () => {
+    new PreviewTestPage();
 });

@@ -20,8 +20,7 @@
     <!-- Заголовок и информация о тесте -->
     <div class="test-header">
         <div class="header-content">
-            <h1>🎉 Ваш тест готов!</h1>
-            <p class="test-subtitle">Просмотрите вопросы, отредактируйте при необходимости и начните тестирование</p>
+            <h1>Ваш тест готов! Просмотрите вопросы, отредактируйте при необходимости и начните тестирование</h1>
         </div>
         
         <div class="test-meta">
@@ -67,27 +66,23 @@
 
     <!-- Дополнительные настройки -->
     <div class="test-options">
-        <label class="checkbox-container">
+        <label class="options-toggle-btn">
             <input type="checkbox" id="show-explanations-preview" checked>
             <span class="checkmark"></span>
-            Показывать объяснения после ответа
+            <span class="option-text">Показывать объяснения после ответа</span>
         </label>
     </div>
 
     <!-- Дополнительные действия -->
     <div class="secondary-actions">
-        <button class="btn primary-btn" id="toggle-preview-btn">
-            <span class="btn-icon">👁️</span>
-            <span class="btn-text">Показать вопросы</span>
-        </button>
         <button class="btn tertiary-btn" id="create-new-btn">
             <span class="btn-icon">✨</span>
             <span class="btn-text">Создать новый</span>
         </button>
     </div>
 
-    <!-- Предпросмотр вопросов в стиле оригинала -->
-    <div class="test-preview-section" id="questions-preview" style="display: none;">
+    <!-- Предпросмотр вопросов в стиле оригинала (всегда показан) -->
+    <div class="test-preview-section" id="questions-preview">
         <h3>Предпросмотр теста</h3>
         <div class="questions-list-container">
             <div id="questions-list" class="questions-list">
@@ -95,8 +90,6 @@
             </div>
         </div>
     </div>
-
-
 
     <!-- Индикатор загрузки -->
     <div class="loading-indicator" id="loading-indicator" style="display: none;">

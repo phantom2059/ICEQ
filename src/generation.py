@@ -26,6 +26,7 @@ from sklearn.cluster import KMeans
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 from question_generator_api import generate_questions_deepseek, generate_questions_qwen
+from stats_logger import stats_logger
 import asyncio
 
 # Загружаем переменные окружения с обработкой кодировок
@@ -84,14 +85,9 @@ def parse_questions(text_questions: str) -> list[dict]:
     Returns:
         list[dict]: Список структурированных вопросов
     """
-    print("🔍 === НАЧАЛО ПАРСИНГА ВОПРОСОВ ===")
-    print(f"📝 Длина входного текста: {len(text_questions)} символов")
-    print(f"📄 Первые 300 символов текста: {text_questions[:300]}...")
-    
     # Извлекаем JSON из markdown блоков если есть
     json_text = text_questions.strip()
     if json_text.startswith('```json'):
-        print("🔍 Обнаружен JSON в markdown блоке, извлекаем...")
         # Ищем начало и конец JSON блока
         start_marker = '```json'
         end_marker = '```'
@@ -101,12 +97,7 @@ def parse_questions(text_questions: str) -> list[dict]:
         
         if end_idx != -1:
             json_text = json_text[start_idx:end_idx].strip()
-            print(f"✅ JSON извлечен из markdown, длина: {len(json_text)} символов")
-            print(f"📄 Извлеченный JSON: {json_text[:200]}...")
-        else:
-            print("⚠️ Не найден закрывающий маркер для JSON блока")
     elif '```json' in json_text:
-        print("🔍 JSON блок найден не в начале, извлекаем...")
         # Ищем JSON блок в любом месте текста
         start_marker = '```json'
         end_marker = '```'
@@ -118,57 +109,37 @@ def parse_questions(text_questions: str) -> list[dict]:
             
             if end_idx != -1:
                 json_text = json_text[start_idx:end_idx].strip()
-                print(f"✅ JSON извлечен из середины текста, длина: {len(json_text)} символов")
-                print(f"📄 Извлеченный JSON: {json_text[:200]}...")
-            else:
-                print("⚠️ Не найден закрывающий маркер для JSON блока")
-    else:
-        print("🔍 Markdown блоки не обнаружены, используем текст как есть")
     
     try:
         # Пытаемся распарсить как JSON
-        print("🔍 Попытка парсинга как JSON...")
         json_data = json.loads(json_text)
-        print("✅ JSON успешно распарсен!")
         
         questions = []
         
         # Обрабатываем разные форматы JSON
         if isinstance(json_data, dict) and 'questions' in json_data:
-            print(f"📊 Найден объект с полем 'questions', содержит {len(json_data['questions'])} элементов")
             items = json_data['questions']
         elif isinstance(json_data, list):
-            print(f"📊 Найден список из {len(json_data)} элементов")
             items = json_data
         else:
-            print(f"⚠️ Неожиданный формат JSON: {type(json_data)}")
             items = []
         
         for i, item in enumerate(items):
-            print(f"🔍 Обработка элемента {i+1}: {item}")
-            
             # Проверяем наличие необходимых полей
             if not isinstance(item, dict):
-                print(f"⚠️ Элемент {i+1} не является объектом: {type(item)}")
                 continue
                 
             question_text = item.get('question', '')
             if not question_text:
-                print(f"⚠️ Элемент {i+1} не содержит вопроса")
                 continue
             
             # Обрабатываем варианты ответов
             options = item.get('options', item.get('answers', []))
             if not options:
-                print(f"⚠️ Элемент {i+1} не содержит вариантов ответов")
                 continue
             
             # Определяем правильный ответ
             correct_answer = item.get('correct_answer', '')
-            
-            print(f"❓ Вопрос: {question_text}")
-            print(f"📋 Варианты: {options}")
-            print(f"✅ Правильный ответ: {correct_answer}")
             
             # Создаем список ответов в нужном формате
             answers = []
@@ -187,53 +158,39 @@ def parse_questions(text_questions: str) -> list[dict]:
                     'answer': option.strip(),
                     'is_correct': is_correct
                 })
-                
-                print(f"  {j+1}. {option} {'✅' if is_correct else '❌'}")
             
             # Проверяем что есть хотя бы один правильный ответ
             correct_count = sum(1 for ans in answers if ans['is_correct'])
             if correct_count == 0:
-                print(f"⚠️ Не найден правильный ответ для вопроса {i+1}, пытаемся исправить...")
                 # Если не нашли точного соответствия, пробуем частичное
                 for j, option in enumerate(options):
                     if correct_answer.lower() in option.lower() or option.lower() in correct_answer.lower():
                         answers[j]['is_correct'] = True
-                        print(f"🔧 Установлен правильный ответ по частичному совпадению: {option}")
                         break
                 else:
                     # Если все еще не найден, делаем первый вариант правильным
                     if answers:
                         answers[0]['is_correct'] = True
-                        print(f"🔧 Установлен первый вариант как правильный по умолчанию")
             
             questions.append({
                 'question': question_text,
                 'answers': answers,
                 'explanation': item.get('explanation', '')
             })
-            print(f"✅ Вопрос {i+1} успешно добавлен")
         
-        print(f"✅ JSON парсинг завершен, получено {len(questions)} вопросов")
         if questions:
-            print("🔍 === РЕЗУЛЬТАТ ПАРСИНГА ===")
-            for i, q in enumerate(questions):
-                print(f"  {i+1}. {q['question'][:50]}... ({len(q['answers'])} ответов)")
-            print("=== КОНЕЦ ПАРСИНГА ВОПРОСОВ ===")
             return questions
             
     except json.JSONDecodeError as e:
-        print(f"❌ Ошибка парсинга JSON: {e}")
-        print("🔍 Переходим к парсингу в старом формате...")
+        pass  # Переходим к парсингу в старом формате
     
     # Если JSON не парсится, пробуем старый формат
-    print("🔍 Применяем регулярные выражения для старого формата...")
     question_block_pattern = re.compile(r'(?ms)^\s*(\d+)\.\s*(.+?)(?=^\s*\d+\.\s|\Z)')
     answer_line_pattern = re.compile(r'^\s*([+-])\s*(.+)')
     explanation_line_pattern = re.compile(r'^\s*!\s*(.+)')
 
     questions = []
     blocks = question_block_pattern.findall(text_questions)
-    print(f"📊 Найдено {len(blocks)} блоков вопросов")
     
     for i, (number, block) in enumerate(blocks):
         lines = block.splitlines()
@@ -268,30 +225,7 @@ def parse_questions(text_questions: str) -> list[dict]:
                 'answers': answers,
                 'explanation': explanation
             })
-        else:
-            print(f"⚠️ Блок {i+1} не содержит валидных ответов, пропускаем")
     
-    print(f"🔍 === РЕЗУЛЬТАТ ПАРСИНГА ===")
-    print(f"📊 Итого найдено вопросов: {len(questions)}")
-    for i, q in enumerate(questions):
-        print(f"  {i+1}. {q['question'][:50]}... ({len(q['answers'])} ответов)")
-    
-    if not questions:
-        print("❌ ВНИМАНИЕ: Не удалось распарсить ни одного вопроса!")
-        print("📄 Попытка найти любые паттерны в тексте:")
-        # Ищем числа в начале строк
-        numbered_lines = re.findall(r'^\d+\..*', text_questions, re.MULTILINE)
-        print(f"🔍 Найдено строк с номерами: {len(numbered_lines)}")
-        for line in numbered_lines[:5]:  # Показываем первые 5
-            print(f"  - {line}")
-        
-        # Ищем знаки + и -
-        plus_minus_lines = re.findall(r'^[+-].*', text_questions, re.MULTILINE)
-        print(f"🔍 Найдено строк с +/-: {len(plus_minus_lines)}")
-        for line in plus_minus_lines[:5]:  # Показываем первые 5
-            print(f"  - {line}")
-    
-    print("=== КОНЕЦ ПАРСИНГА ВОПРОСОВ ===")
     return questions
 
 
@@ -551,82 +485,50 @@ class QuestionsGenerator:
         Возвращаемое значение (list[dict]): извлечённые вопросы
         '''
 
-        print(f"🔍 === НАЧАЛО ЛОГИРОВАНИЯ ДЛЯ МОДЕЛИ {llm.upper()} ===")
-        print(f"📊 Запрошено вопросов: {questions_num}")
-        print(f"📝 Длина входного контента: {len(text_content)} символов")
-        print(f"📄 Начало контента: {text_content[:200]}...")
+
 
         match llm:
             case 'deepseek':
-                print('🤖 Генерация вопросов с помощью Deepseek API...')
                 try:
                     # Используем асинхронную функцию
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        print("⚡ Запуск асинхронного генератора...")
                         response_text = loop.run_until_complete(
                             generate_questions_deepseek(text_content, questions_num)
                         )
-                        print("📥 Асинхронный генератор завершен, начинаем парсинг...")
                     finally:
                         loop.close()
                     
-                    print(f"📋 Ответ от DeepSeek API получен (длина: {len(response_text)} символов).")
-                    
-                    # Логируем перед парсингом
-                    print("🔍 Отправляем ответ в parse_questions...")
+                    # Парсим ответ
                     parsed_questions = parse_questions(response_text)
-                    print(f"✅ Парсинг завершен, получено {len(parsed_questions)} вопросов")
-                    
-                    if not parsed_questions:
-                        print("⚠️ ВНИМАНИЕ: parse_questions вернул пустой список!")
-                        print(f"📄 Сырой ответ для анализа: {response_text[:1000]}...")
                     
                     return parsed_questions
                 except Exception as e:
-                    print(f'❌ Ошибка при работе с DeepSeek API: {e}')
-                    print(f"🔍 Тип ошибки: {type(e).__name__}")
-                    import traceback
-                    print(f"📋 Стек вызовов: {traceback.format_exc()}")
+                    print(f'Ошибка при работе с DeepSeek API: {e}')
                     return []
             
             case 'qwen':
-                print('🤖 Генерация вопросов с помощью Qwen API...')
                 try:
                     # Используем асинхронную функцию
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        print("⚡ Запуск асинхронного генератора...")
                         response_text = loop.run_until_complete(
                             generate_questions_qwen(text_content, questions_num)
                         )
-                        print("📥 Асинхронный генератор завершен, начинаем парсинг...")
                     finally:
                         loop.close()
                     
-                    print(f"📋 Ответ от Qwen API получен (длина: {len(response_text)} символов).")
-                    
-                    # Логируем перед парсингом
-                    print("🔍 Отправляем ответ в parse_questions...")
+                    # Парсим ответ
                     parsed_questions = parse_questions(response_text)
-                    print(f"✅ Парсинг завершен, получено {len(parsed_questions)} вопросов")
-                    
-                    if not parsed_questions:
-                        print("⚠️ ВНИМАНИЕ: parse_questions вернул пустой список!")
-                        print(f"📄 Сырой ответ для анализа: {response_text[:1000]}...")
                     
                     return parsed_questions
                 except Exception as e:
-                    print(f'❌ Ошибка при работе с Qwen API: {e}')
-                    print(f"🔍 Тип ошибки: {type(e).__name__}")
-                    import traceback
-                    print(f"📋 Стек вызовов: {traceback.format_exc()}")
+                    print(f'Ошибка при работе с Qwen API: {e}')
                     return []
             
             case 'iceq':
-                print('🤖 Использование квантованной ICEQ Model...')
                 if self.iceq_model is None:
                     raise ValueError("Модель ICEQ не загружена")
                 
@@ -636,34 +538,23 @@ class QuestionsGenerator:
 
                 prompt = self.__system_prompt + '\n' + user_prompt
                 
-                print(f"📄 Сформированный промпт (длина: {len(prompt)} символов)")
-                print(f"📄 Первые 300 символов промпта: {prompt[:300]}...")
-                
                 messages = [
                     {'role': 'user', 'content': prompt}
                 ]
 
                 # Использование Chat Template
-                print("🔄 Применение chat template...")
                 text = self.iceq_model['tokenizer'].apply_chat_template(
                     messages,
                     tokenize=False,
                     add_generation_prompt=True
                 )
                 
-                print(f"📄 Финальный текст после template (длина: {len(text)} символов)")
-                print(f"📄 Первые 200 символов: {text[:200]}...")
-                
                 # Определяем устройство модели
                 model_device = next(self.iceq_model['model'].parameters()).device
-                print(f"🖥️ Устройство модели: {model_device}")
                 
-                print("🔤 Токенизация...")
                 model_inputs = self.iceq_model['tokenizer']([text], return_tensors='pt').to(model_device)
-                print(f"📊 Количество токенов в запросе: {model_inputs.input_ids.shape[1]}")
 
                 # Генерация вопросов
-                print("🎯 Запуск генерации модели...")
                 generated_ids = self.iceq_model['model'].generate(
                     **model_inputs,
                     max_new_tokens=32_000
@@ -672,23 +563,13 @@ class QuestionsGenerator:
                     output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
                 ]
 
-                print("🔤 Декодирование ответа...")
                 response = self.iceq_model['tokenizer'].batch_decode(generated_ids, skip_special_tokens=True)[0]
-                print(f'📋 Ответ от ICEQ Model получен (длина: {len(response)} символов).')
-                print(f"📄 Первые 500 символов ответа: {response[:500]}...")
                 
-                # Логируем перед парсингом
-                print("🔍 Отправляем ответ в parse_questions...")
+                # Парсим ответ
                 parsed_questions = parse_questions(response)
-                print(f"✅ Парсинг завершен, получено {len(parsed_questions)} вопросов")
-                
-                if not parsed_questions:
-                    print("⚠️ ВНИМАНИЕ: parse_questions вернул пустой список!")
-                    print(f"📄 Полный ответ для анализа: {response}")
 
                 return parsed_questions
-        
-        print("=== КОНЕЦ ЛОГИРОВАНИЯ ===")
+
 
     def __generate_iceq(self, text: str, num_questions: int) -> List[Dict]:
         if not self.iceq_model:
@@ -910,42 +791,23 @@ class QuestionsGenerator:
 
         # Поиск центральных объектов в каждом кластере
         target_chunks = self.__get_central_objects(kmeans, clustering_embeddings, chunks)
-        print('Поиск центральных объектов для кластеров...')
-        print(f"📊 Найдено {len(target_chunks)} центральных чанков")
-        
-        # Логируем отобранные чанки
-        for i, chunk in enumerate(target_chunks):
-            print(f"🔍 Чанк {i+1}: {chunk[:100]}...")
-        
-        print('Передача чанков для генерации...')
+        print(f'Найдено {len(target_chunks)} центральных чанков')
         
         # Объединяем отобранные чанки для генерации
         text_for_generation = '\n\n'.join(target_chunks)
-        print(f"📝 Итоговый текст для генерации (длина: {len(text_for_generation)} символов)")
-        print(f"📄 Первые 500 символов текста для генерации: {text_for_generation[:500]}...")
         
-        print("🎯 КРИТИЧЕСКАЯ ТОЧКА: Вызываем __get_questions")
+        print('Отправка запроса к модели...')
         questions = self.__get_questions(llm, text_for_generation, questions_num)
-        print(f"📋 Результат от __get_questions: {len(questions) if questions else 0} вопросов")
+        print(f'Получено {len(questions) if questions else 0} вопросов')
 
         # Если вопросы не были сгенерированы, возвращаем пустой список
         if not questions:
-            print('❌ КРИТИЧНО: Вопросы не были сгенерированы!')
-            print("🔍 Попытка диагностики проблемы:")
-            print(f"  - Модель: {llm}")
-            print(f"  - Длина текста: {len(text_for_generation)}")
-            print(f"  - Количество чанков: {len(target_chunks)}")
-            print(f"  - Запрошено вопросов: {questions_num}")
+            print('Ошибка: вопросы не были сгенерированы')
             return []
-        else:
-            print(f"✅ Успешно получены вопросы: {len(questions)}")
-            # Кратко показываем что получили
-            for i, q in enumerate(questions[:3]):  # Показываем первые 3
-                print(f"  {i+1}. {q.get('question', 'NO_QUESTION')[:50]}...")
 
         try:
             # Добавление объяснений через семантический поиск
-            print('Вычисление эмбеддингов для поиска...')
+            print('Извлечение эмбеддингов...')
             doc_embeddings = self.__search_model.encode(
                 target_chunks,
                 prompt_name='search_document',
@@ -956,21 +818,17 @@ class QuestionsGenerator:
                 prompt_name='search_query',
                 device=self.device
             )
-            print('Эмбеддинги для поиска вычислены.')
 
             # Проверка корректности эмбеддингов
             if query_embeddings is None or len(query_embeddings.shape) < 2 or query_embeddings.shape[0] == 0:
-                print("⚠️ Не удалось создать эмбеддинги для вопросов. Объяснения будут пропущены.")
+                print("Ошибка создания эмбеддингов")
                 raise ValueError("Некорректные эмбеддинги для запроса")
 
             # Создание FAISS индекса для быстрого поиска похожих чанков
-            print('Настройка FAISS индекса...')
             index = faiss.IndexFlatIP(doc_embeddings.shape[1])  # Косинусное расстояние
             index.add(doc_embeddings)
-            print('FAISS индекс готов.')
 
             # Поиск наиболее релевантных чанков для каждого вопроса
-            print('Поиск соответствий вопросов и чанков...')
             _, indices = index.search(query_embeddings, 1)
 
             # Добавление объяснений к вопросам
@@ -980,7 +838,7 @@ class QuestionsGenerator:
                     question['explanation'] = str(explanation_chunk[0])
                 
         except Exception as e:
-            print(f'⚠️ Ошибка при добавлении объяснений из контекста: {e}')
+            print(f'Ошибка при добавлении объяснений: {e}')
             # Возвращаем вопросы без объяснений при ошибке
             for q in questions:
                 if not q.get('explanation'):
@@ -988,46 +846,19 @@ class QuestionsGenerator:
 
         # Финальная статистика по времени
         actual_time = time.time() - start_time
-        
-        # Определяем полное название модели для красивого вывода
-        model_names = {
-            'deepseek': 'DeepSeek-V3',
-            'qwen': 'Qwen-3-235B',
-            'iceq': 'ICEQ (локальная)'
-        }
-        model_display = model_names.get(llm, llm.upper())
-        
-        print()
-        print(f'🎉 ГЕНЕРАЦИЯ ЗАВЕРШЕНА!')
-        print(f'   🤖 Модель: {model_display}')
-        print(f'   ⏱️  Фактическое время: {actual_time:.1f} сек ({actual_time/60:.1f} мин)')
-        print(f'   📈 Ожидалось: {time_estimate["estimated_seconds"]} сек')
-        print(f'   📊 Разница: {actual_time - time_estimate["estimated_seconds"]:.1f} сек')
-        print(f'   📝 Результат: {len(questions)} вопросов')
-        print()
+        print(f'Генерация завершена за {actual_time:.1f} сек, получено {len(questions)} вопросов')
 
-        # КРИТИЧЕСКАЯ ОТЛАДКА: проверяем структуру данных перед возвратом
-        print(f"🔍 === ФИНАЛЬНАЯ ПРОВЕРКА СТРУКТУРЫ ДАННЫХ ===")
-        print(f"📊 Тип возвращаемых данных: {type(questions)}")
-        print(f"📊 Количество элементов: {len(questions) if questions else 0}")
-        
-        if questions:
-            print(f"🔍 Структура первого вопроса:")
-            first_q = questions[0]
-            print(f"  - Тип: {type(first_q)}")
-            print(f"  - Ключи: {list(first_q.keys()) if isinstance(first_q, dict) else 'NOT_DICT'}")
-            if isinstance(first_q, dict):
-                print(f"  - question: {first_q.get('question', 'MISSING')[:50]}...")
-                print(f"  - answers: {len(first_q.get('answers', []))} ответов")
-                print(f"  - explanation: {'да' if first_q.get('explanation') else 'нет'}")
-                
-                if first_q.get('answers'):
-                    first_answer = first_q['answers'][0]
-                    print(f"  - Структура первого ответа: {first_answer}")
-        else:
-            print("❌ КРИТИЧНО: Возвращается пустой список!")
-        
-        print("=== КОНЕЦ ФИНАЛЬНОЙ ПРОВЕРКИ ===")
+        # Логируем статистику создания теста
+        try:
+            stats_logger.log_test_creation(
+                text_chars_count=len(text),
+                model_used=llm,
+                questions_generated=len(questions),
+                generation_time=actual_time
+            )
+        except Exception:
+            # Молча игнорируем ошибки логирования
+            pass
         
         return questions
 
@@ -1046,6 +877,19 @@ class QuestionsGenerator:
         text_length = len(text)
         word_count = len(text.split())
         
+        # Пытаемся получить оценку из накопленной статистики
+        try:
+            estimated_time = stats_logger.get_estimated_generation_time(text_length, llm)
+            if estimated_time > 0:
+                return {
+                    'estimated_time_seconds': estimated_time,
+                    'estimated_time_formatted': self._format_time(estimated_time),
+                    'source': 'statistics'
+                }
+        except Exception:
+            pass
+        
+        # Fallback на базовые оценки если статистики нет
         if llm == 'iceq':
             # Базовое время для ICEQ модели с 8-битным квантованием
             base_time_per_question = 3.5  # секунд на вопрос
@@ -1062,11 +906,29 @@ class QuestionsGenerator:
         return {
             'estimated_seconds': int(estimated_time),
             'estimated_minutes': round(estimated_time / 60, 1),
+            'estimated_time_formatted': self._format_time(estimated_time),
             'text_length': text_length,
             'word_count': word_count,
             'questions_count': questions_num,
-            'model': llm
+            'model': llm,
+            'source': 'baseline'
         }
+    
+    def _format_time(self, seconds: float) -> str:
+        """Форматирует время в человекочитаемый формат"""
+        if seconds < 60:
+            return f"{int(seconds)} сек"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            remaining_seconds = int(seconds % 60)
+            if remaining_seconds > 0:
+                return f"{minutes} мин {remaining_seconds} сек"
+            else:
+                return f"{minutes} мин"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            return f"{hours} ч {minutes} мин"
 
 
 if __name__ == '__main__':

@@ -511,7 +511,7 @@ input:focus, textarea:focus, select:focus {
 /* Модальное окно ценообразования */
 .pricing-modal {
     padding: 2rem;
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
@@ -532,10 +532,12 @@ input:focus, textarea:focus, select:focus {
 
 .pricing-plans {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
     margin-bottom: 2rem;
     align-items: stretch;
+    max-width: 900px;
+    margin: 0 auto 2rem auto;
 }
 
 .plan {
@@ -751,30 +753,34 @@ input:focus, textarea:focus, select:focus {
     border-color: rgba(255, 255, 255, 0.5) !important;
 }
 
+/* Импорт компонентов */
+@import url('./components/counter.css');
+
 /* Адаптивность для модального окна ценообразования */
 @media (max-width: 768px) {
     .pricing-plans {
         grid-template-columns: 1fr;
-        gap: 20px;
+        gap: 1.5rem;
+        max-width: 100%;
     }
     
     .pricing-modal {
         max-width: 95%;
-        padding: 15px;
+        padding: 1rem;
     }
     
     .modal-content {
-        padding: 20px;
+        padding: 1rem;
         width: 95%;
         max-width: 95%;
     }
     
     .plan {
-        padding: 20px 15px;
+        padding: 1.5rem 1rem;
     }
     
     .plan .price {
-        font-size: 24px;
+        font-size: 2rem;
     }
     
     .premium-status-card {
