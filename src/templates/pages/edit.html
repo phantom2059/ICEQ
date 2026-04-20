@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование теста - ICEQ{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/edit.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="edit-container">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs">
+        <a href="/" class="breadcrumb-link">Главная</a>
+        <span class="breadcrumb-separator">→</span>
+        <a href="/create" class="breadcrumb-link">Создать тест</a>
+        <span class="breadcrumb-separator">→</span>
+        <a href="/preview" class="breadcrumb-link">Предпросмотр</a>
+        <span class="breadcrumb-separator">→</span>
+        <span class="breadcrumb-current">Редактирование</span>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="edit-header">
+        <div class="header-content">
+            <h1>✎ Редактирование вопросов теста</h1>
+            <p>Отредактируйте вопросы, варианты ответов и объяснения для улучшения качества теста</p>
+        </div>
+        
+        <div class="test-meta">
+            <div class="meta-item">
+                <span class="meta-icon">📊</span>
+                <div class="meta-content">
+                    <span class="meta-label">Вопросов</span>
+                    <span class="meta-value" id="questions-count">0</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <span class="meta-icon">🤖</span>
+                <div class="meta-content">
+                    <span class="meta-label">Модель</span>
+                    <span class="meta-value" id="used-model">DeepSeek</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <span class="meta-icon">💾</span>
+                <div class="meta-content">
+                    <span class="meta-label">Статус</span>
+                    <span class="meta-value" id="save-status">Не сохранено</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель управления -->
+    <div class="edit-actions">
+        <div class="main-actions-group">
+            <button id="save-test-btn" class="btn action-btn primary">
+                <span class="btn-icon">💾</span>
+                <span class="btn-text">Сохранить и вернуться</span>
+            </button>
+            <button id="add-question-btn" class="btn action-btn">
+                <span class="btn-icon">➕</span>
+                <span class="btn-text">Добавить вопрос</span>
+            </button>
+        </div>
+        
+        <div class="secondary-actions">
+            <button id="preview-test-btn" class="btn tertiary-btn">
+                <span class="btn-icon">👁️</span>
+                <span class="btn-text">Предпросмотр</span>
+            </button>
+            <button id="import-question-btn" class="btn tertiary-btn">
+                <span class="btn-icon">📁</span>
+                <span class="btn-text">Импорт</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Область редактирования вопросов -->
+    <div class="questions-edit-section">
+        <h3>Редактирование вопросов</h3>
+        
+        <!-- Панель инструментов -->
+        <div class="edit-toolbar">
+            <div class="toolbar-left">
+                <button id="expand-all-btn" class="toolbar-btn">
+                    <span class="btn-icon">📖</span>
+                    <span class="btn-text">Развернуть все</span>
+                </button>
+                <button id="collapse-all-btn" class="toolbar-btn">
+                    <span class="btn-icon">📕</span>
+                    <span class="btn-text">Свернуть все</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Список редактируемых вопросов -->
+        <div class="questions-edit-container">
+            <div id="questions-edit-list" class="questions-edit-list">
+                <!-- Вопросы для редактирования будут добавлены динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Индикатор загрузки -->
+    <div class="loading-indicator" id="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Сохранение изменений...</p>
+    </div>
+
+    <!-- Модальное окно подтверждения -->
+    <div id="confirm-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Подтверждение</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message">Вы уверены?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="btn secondary-btn">Отмена</button>
+                <button id="modal-confirm" class="btn danger-btn">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/pages/edit.js') }}"></script>
+{% endblock %} 

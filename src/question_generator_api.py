@@ -171,14 +171,12 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
         with open(user_prompt_path, 'r', encoding='utf8') as f:
             user_prompt_template = f.read()
             
-        print("Промпты загружены из файлов")
         
     except FileNotFoundError as e:
-        print(f"❌ Ошибка загрузки промптов: {e}")
+        print(f"Ошибка загрузки промптов: {e}")
         # Fallback промпты на случай отсутствия файлов
         system_prompt = "Ты - эксперт по созданию образовательных тестов."
         user_prompt_template = "Создай [QUESTIONS_NUM] вопросов по тексту: [CHUNKS]"
-        print("⚠️ Используются fallback промпты")
     
     # Формируем пользовательский промпт, заменяя плейсхолдеры
     user_prompt = user_prompt_template.replace('[QUESTIONS_NUM]', str(num_questions))
@@ -202,6 +200,7 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
     }
 
     full_response = ""
+    response_chunks = 0
     
     # Выполняем асинхронный запрос к API
     async with aiohttp.ClientSession() as session:
@@ -213,6 +212,7 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
             # Проверяем статус ответа
             if response.status != 200:
                 error_text = await response.text()
+                print(f"Ошибка API: {response.status} - {error_text}")
                 raise Exception(f"Ошибка API DeepSeek: {response.status} - {error_text}")
                 
             # Обрабатываем потоковый ответ
@@ -230,9 +230,13 @@ async def generate_questions_deepseek(text: str, num_questions: int = 5):
                             if 'content' in delta and delta['content']:
                                 content = delta['content']
                                 full_response += content
+                                response_chunks += 1
                     except json.JSONDecodeError:
                         # Пропускаем некорректные JSON чанки
                         continue
+    
+    if not full_response.strip():
+        print("Получен пустой ответ от API")
     
     return full_response
 
@@ -275,14 +279,12 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
         with open(user_prompt_path, 'r', encoding='utf8') as f:
             user_prompt_template = f.read()
             
-        print("Промпты загружены из файлов")
         
     except FileNotFoundError as e:
-        print(f"❌ Ошибка загрузки промптов: {e}")
+        print(f"Ошибка загрузки промптов: {e}")
         # Fallback промпты на случай отсутствия файлов
         system_prompt = "Ты - эксперт по созданию образовательных тестов."
         user_prompt_template = "Создай [QUESTIONS_NUM] вопросов по тексту: [CHUNKS]"
-        print("⚠️ Используются fallback промпты")
     
     # Формируем пользовательский промпт
     user_prompt = user_prompt_template.replace('[QUESTIONS_NUM]', str(num_questions))
@@ -306,6 +308,7 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
     }
 
     full_response = ""
+    response_chunks = 0
     
     # Выполняем асинхронный запрос к API
     async with aiohttp.ClientSession() as session:
@@ -317,6 +320,7 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
             # Проверяем статус ответа
             if response.status != 200:
                 error_text = await response.text()
+                print(f"Ошибка API: {response.status} - {error_text}")
                 raise Exception(f"Ошибка API Qwen: {response.status} - {error_text}")
                 
             # Обрабатываем потоковый ответ
@@ -334,9 +338,13 @@ async def generate_questions_qwen(text: str, num_questions: int = 5):
                             if 'content' in delta and delta['content']:
                                 content = delta['content']
                                 full_response += content
+                                response_chunks += 1
                     except json.JSONDecodeError:
                         # Пропускаем некорректные JSON чанки
                         continue
+    
+    if not full_response.strip():
+        print("Получен пустой ответ от API")
     
     return full_response
 

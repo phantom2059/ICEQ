@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Создать тест - ICEQ{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/create.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="create-container">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs">
+        <a href="/" class="breadcrumb-link">Главная</a>
+        <span class="breadcrumb-separator">→</span>
+        <span class="breadcrumb-current">Создать тест</span>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="page-header">
+        <h1>✨ Создание теста</h1>
+        <p class="page-description">Загрузите текст или файл, настройте параметры и получите готовый тест с вопросами</p>
+    </div>
+
+    <!-- Основная форма -->
+    <div class="card main-form">
+        <!-- Переключатели ввода -->
+        <div class="input-tabs">
+            <button class="tab-btn active" data-tab="text">
+                <span class="tab-icon">📝</span>
+                <span>Текст</span>
+            </button>
+            <button class="tab-btn" data-tab="file">
+                <span class="tab-icon">📁</span>
+                <span>Файл</span>
+            </button>
+        </div>
+
+        <!-- Вкладка ввода текста -->
+        <div id="text-input-tab" class="tab-content active">
+            <div class="input-group">
+                <label for="text-content">Введите текст для генерации вопросов:</label>
+                <textarea 
+                    id="text-content" 
+                    rows="8" 
+                    placeholder="Введите или вставьте текст здесь..."
+                    maxlength="10000"
+                ></textarea>
+                <div class="input-footer">
+                    <div id="char-counter" class="char-counter">
+                        <span class="current">0</span>/<span class="max">10000</span> символов
+                    </div>
+                    <div class="input-hints">
+                        💡 Лимит символов: 10 000 (базовый план)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка загрузки файла -->
+        <div id="file-input-tab" class="tab-content">
+            <div class="input-group">
+                <label>Загрузите файл:</label>
+                <div id="drop-area" class="upload-area">
+                    <div class="upload-icon">📎</div>
+                    <h3>Перетащите файл сюда</h3>
+                    <p>или</p>
+                    <input type="file" id="file-upload" accept=".txt,.doc,.docx,.pdf" hidden>
+                    <button type="button" class="btn secondary-btn" onclick="document.getElementById('file-upload').click()">
+                        Выберите файл
+                    </button>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <div class="file-preview">
+                            <span class="file-icon">📄</span>
+                            <div class="file-details">
+                                <div class="file-name" id="file-name"></div>
+                                <div class="file-size" id="file-size"></div>
+                            </div>
+                            <button class="file-remove" id="file-remove">✕</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="upload-hints">
+                    <p><strong>Поддерживаемые форматы:</strong> TXT, DOC, DOCX, PDF</p>
+                    <p>💡 Максимальный размер: 50 КБ (базовый план)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Настройки теста -->
+        <div class="test-settings">
+            <div class="setting-group">
+                <label for="question-number">Количество вопросов:</label>
+                <div class="quantity-control">
+                    <button type="button" class="quantity-btn" id="decrease-questions">−</button>
+                    <input type="number" id="question-number" min="5" max="50" value="10" readonly>
+                    <button type="button" class="quantity-btn" id="increase-questions">+</button>
+                </div>
+                <div class="slider-container">
+                    <input type="range" min="5" max="50" value="10" class="slider" id="question-slider">
+                    <div class="slider-labels">
+                        <span>5</span>
+                        <span>50</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label>Модель генерации:</label>
+                <div class="model-selection">
+                    <div class="model-option" data-model="iceq">
+                        <div class="model-header">
+                            <div class="model-icon">🏠</div>
+                            <div class="model-info">
+                                <h4>ICEQ (наша дообученная модель)</h4>
+                                <p>Специально обученная для генерации вопросов</p>
+                            </div>
+                            <div class="model-status recommended">Рекомендуется</div>
+                        </div>
+                    </div>
+                    
+                    <div class="model-option" data-model="deepseek">
+                        <div class="model-header">
+                            <div class="model-icon">🧠</div>
+                            <div class="model-info">
+                                <h4>DeepSeek</h4>
+                                <p>Облачная модель высокого качества</p>
+                            </div>
+                            <div class="model-status alternative">Альтернатива</div>
+                        </div>
+                    </div>
+                    
+                    <div class="model-option" data-model="qwen">
+                        <div class="model-header">
+                            <div class="model-icon">⚡</div>
+                            <div class="model-info">
+                                <h4>Qwen</h4>
+                                <p>Быстрая облачная модель</p>
+                            </div>
+                            <div class="model-status alternative">Альтернатива</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Предварительная оценка -->
+        <div class="estimation-panel" id="estimation-panel" style="display: none;">
+            <div class="estimation-content">
+                <div class="estimation-icon">⏱️</div>
+                <div class="estimation-info">
+                    <h4>Примерное время генерации:</h4>
+                    <div class="time-estimate" id="time-estimate">~ 2-3 минуты</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="form-actions">
+            <button type="button" class="btn secondary-btn" id="back-btn">
+                ← Назад
+            </button>
+            <button type="button" class="btn primary-btn" id="generate-btn" disabled>
+                <span class="btn-icon">✨</span>
+                <span class="btn-text">Создать тест</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Экран загрузки -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3 id="loading-title">Генерация теста...</h3>
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+            
+            <div class="loading-stages">
+                <div class="stage-item" data-stage="analyze">
+                    <div class="stage-icon">📖</div>
+                    <div class="stage-text">Анализ текста</div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage-item" data-stage="concepts">
+                    <div class="stage-icon">🧩</div>
+                    <div class="stage-text">Извлечение концепций</div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage-item" data-stage="questions">
+                    <div class="stage-icon">❓</div>
+                    <div class="stage-text">Формирование вопросов</div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage-item" data-stage="answers">
+                    <div class="stage-icon">💡</div>
+                    <div class="stage-text">Генерация ответов</div>
+                    <div class="stage-status"></div>
+                </div>
+                <div class="stage-item" data-stage="quality">
+                    <div class="stage-icon">✅</div>
+                    <div class="stage-text">Проверка качества</div>
+                    <div class="stage-status"></div>
+                </div>
+            </div>
+
+            <div id="loading-log" class="loading-log"></div>
+        </div>
+    </div>
+
+
+
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/pages/create.js') }}"></script>
+{% endblock %} 

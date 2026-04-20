@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Прохождение теста - ICEQ{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/take.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="take-container">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs">
+        <a href="/" class="breadcrumb-link">Главная</a>
+        <span class="breadcrumb-separator">→</span>
+        <span class="breadcrumb-current">Пройти тест</span>
+    </div>
+
+    <!-- Заголовок -->
+    <div class="page-header">
+        <h1>📋 Прохождение теста</h1>
+        <p class="page-description">Загрузите файл теста или введите ID теста для прохождения</p>
+    </div>
+
+    <!-- Экран загрузки теста -->
+    <div id="upload-screen" class="upload-screen">
+        <div class="card main-form">
+            <!-- Переключатели ввода -->
+            <div class="input-tabs">
+                <button class="tab-btn active" data-tab="file">
+                    <span class="tab-icon">📁</span>
+                    <span>Загрузить файл</span>
+                </button>
+                <button class="tab-btn" data-tab="id">
+                    <span class="tab-icon">🔗</span>
+                    <span>По ID</span>
+                </button>
+            </div>
+
+            <!-- Вкладка загрузки файла -->
+            <div id="file-input-tab" class="tab-content active">
+                <div class="input-group">
+                    <label>Загрузите файл теста:</label>
+                    <div id="drop-area" class="upload-area">
+                        <div class="upload-icon">📎</div>
+                        <h3>Перетащите файл теста сюда</h3>
+                        <p>или</p>
+                        <input type="file" id="file-upload" accept=".json,.txt" hidden>
+                        <button type="button" class="btn secondary-btn" onclick="document.getElementById('file-upload').click()">
+                            Выберите файл
+                        </button>
+                        <div class="file-info" id="file-info" style="display: none;">
+                            <div class="file-preview">
+                                <span class="file-icon">📄</span>
+                                <div class="file-details">
+                                    <div class="file-name" id="file-name"></div>
+                                    <div class="file-size" id="file-size"></div>
+                                </div>
+                                <button class="file-remove" id="file-remove">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="upload-hints">
+                        <p><strong>Поддерживаемые форматы:</strong> JSON, TXT</p>
+                        <p><strong>Максимальный размер:</strong> 1 МБ</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Вкладка ввода ID -->
+            <div id="id-input-tab" class="tab-content">
+                <div class="input-group">
+                    <label for="test-id">ID теста:</label>
+                    <input type="text" id="test-id" placeholder="Введите ID теста" maxlength="50">
+                    <div class="input-hints">
+                        💡 ID теста можно получить при создании или из ссылки
+                    </div>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="form-actions">
+                <button type="button" class="btn secondary-btn" id="back-btn">
+                    ← Назад
+                </button>
+                <button type="button" class="btn primary-btn" id="load-test-btn" disabled>
+                    <span class="btn-icon">📋</span>
+                    <span class="btn-text">Загрузить тест</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Экран прохождения теста -->
+    <div id="test-screen" class="test-screen" style="display: none;">
+        <div class="test-header">
+            <div class="test-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">Вопрос 1 из 10</div>
+            </div>
+            <div class="test-timer" id="test-timer">00:00</div>
+        </div>
+
+        <div class="question-card" id="question-container">
+            <!-- Здесь будет отображаться текущий вопрос -->
+        </div>
+
+        <div class="test-navigation">
+            <button id="prev-question" class="nav-btn prev" disabled>
+                ← Предыдущий
+            </button>
+            <div class="question-dots" id="question-dots">
+                <!-- Индикаторы вопросов -->
+            </div>
+            <button id="next-question" class="nav-btn next">
+                Следующий →
+            </button>
+            <button id="finish-test" class="nav-btn finish" style="display: none;">
+                Завершить тест
+            </button>
+        </div>
+    </div>
+
+    <!-- Экран результатов -->
+    <div id="results-screen" class="results-screen" style="display: none;">
+        <div id="results-content">
+            <!-- Результаты будут отображаться здесь -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/pages/take.js') }}"></script>
+{% endblock %} 

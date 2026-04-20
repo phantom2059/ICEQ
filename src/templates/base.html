@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ICEQ - Генератор тестов{% endblock %}</title>
+    
+    <!-- Общие стили -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    
+    <!-- Специфичные стили для страницы -->
+    {% block page_css %}{% endblock %}
+    
+    <!-- Шрифты -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Библиотеки для работы с файлами -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
+</head>
+<body>
+    <!-- Заголовок сайта -->
+    <div class="fixed-header">
+        <div class="header-content">
+            <a href="/" class="logo" id="logo-home">ICEQ</a>
+            <div class="header-actions">
+                <div class="premium-btn" id="premium-btn">Премиум</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подвал -->
+    <div class="fixed-footer">
+        <a href="https://github.com/phantom2059/ICEQ" class="about-link" target="_blank" rel="noopener noreferrer">О проекте</a>
+    </div>
+
+    <!-- Переключатель темы -->
+    <div class="theme-toggle" title="Переключить тему">
+        <button id="theme-switch" class="theme-button">
+            <span class="sun-icon">☀️</span>
+            <span class="moon-icon">🌙</span>
+        </button>
+    </div>
+
+    <!-- Кнопка поддержки -->
+    <div class="support-btn" id="support-btn" title="Техническая поддержка">
+        <span>?</span>
+    </div>
+
+    <!-- Главный контейнер приложения -->
+    <div class="app-container">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Модальные окна и всплывающие уведомления -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="modal-content" class="modal-content">
+            <span class="modal-close" id="modal-close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Общие скрипты -->
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    
+    <!-- Специфичные скрипты для страницы -->
+    {% block page_js %}{% endblock %}
+</body>
+</html> 

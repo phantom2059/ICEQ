@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Предпросмотр теста - ICEQ{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/preview.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs">
+        <a href="/" class="breadcrumb-link">Главная</a>
+        <span class="breadcrumb-separator">→</span>
+        <a href="/create" class="breadcrumb-link">Создать тест</a>
+        <span class="breadcrumb-separator">→</span>
+        <span class="breadcrumb-current">Предпросмотр</span>
+    </div>
+
+    <!-- Заголовок и информация о тесте -->
+    <div class="test-header">
+        <div class="header-content">
+            <h1>Ваш тест готов! Просмотрите вопросы, отредактируйте при необходимости и начните тестирование</h1>
+        </div>
+        
+        <div class="test-meta">
+            <div class="meta-item">
+                <span class="meta-icon">📊</span>
+                <div class="meta-content">
+                    <span class="meta-label">Вопросов</span>
+                    <span class="meta-value" id="questions-count">0</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <span class="meta-icon">🤖</span>
+                <div class="meta-content">
+                    <span class="meta-label">Модель</span>
+                    <span class="meta-value" id="used-model">DeepSeek</span>
+                </div>
+            </div>
+            <div class="meta-item">
+                <span class="meta-icon">⏰</span>
+                <div class="meta-content">
+                    <span class="meta-label">Создан</span>
+                    <span class="meta-value" id="creation-time">Только что</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Панель действий в стиле оригинала -->
+    <div class="main-actions-group">
+        <button id="start-test-btn" class="btn action-btn">
+            <span class="btn-icon">▶</span>
+            <span class="btn-text">Пройти онлайн</span>
+        </button>
+        <button id="edit-test-btn" class="btn action-btn premium-feature">
+            <span class="btn-icon">✎</span>
+            <span class="btn-text">Редактировать вопросы</span>
+        </button>
+        <button id="export-test-btn" class="btn action-btn">
+            <span class="btn-icon">⭳</span>
+            <span class="btn-text">Скачать тест</span>
+        </button>
+    </div>
+
+    <!-- Дополнительные настройки -->
+    <div class="test-options">
+        <label class="options-toggle-btn">
+            <input type="checkbox" id="show-explanations-preview" checked>
+            <span class="checkmark"></span>
+            <span class="option-text">Показывать объяснения после ответа</span>
+        </label>
+    </div>
+
+    <!-- Дополнительные действия -->
+    <div class="secondary-actions">
+        <button class="btn tertiary-btn" id="create-new-btn">
+            <span class="btn-icon">✨</span>
+            <span class="btn-text">Создать новый</span>
+        </button>
+    </div>
+
+    <!-- Предпросмотр вопросов в стиле оригинала (всегда показан) -->
+    <div class="test-preview-section" id="questions-preview">
+        <h3>Предпросмотр теста</h3>
+        <div class="questions-list-container">
+            <div id="questions-list" class="questions-list">
+                <!-- Вопросы будут добавлены динамически -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Индикатор загрузки -->
+    <div class="loading-indicator" id="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Обработка...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block page_js %}
+<script src="{{ url_for('static', filename='js/pages/preview.js') }}"></script>
+{% endblock %} 

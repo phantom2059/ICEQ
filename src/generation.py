@@ -26,6 +26,7 @@ from sklearn.cluster import KMeans
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
 from question_generator_api import generate_questions_deepseek, generate_questions_qwen
+from stats_logger import stats_logger
 import asyncio
 
 # Загружаем переменные окружения с обработкой кодировок
@@ -84,30 +85,104 @@ def parse_questions(text_questions: str) -> list[dict]:
     Returns:
         list[dict]: Список структурированных вопросов
     """
+    # Извлекаем JSON из markdown блоков если есть
+    json_text = text_questions.strip()
+    if json_text.startswith('```json'):
+        # Ищем начало и конец JSON блока
+        start_marker = '```json'
+        end_marker = '```'
+        
+        start_idx = json_text.find(start_marker) + len(start_marker)
+        end_idx = json_text.find(end_marker, start_idx)
+        
+        if end_idx != -1:
+            json_text = json_text[start_idx:end_idx].strip()
+    elif '```json' in json_text:
+        # Ищем JSON блок в любом месте текста
+        start_marker = '```json'
+        end_marker = '```'
+        
+        start_idx = json_text.find(start_marker)
+        if start_idx != -1:
+            start_idx += len(start_marker)
+            end_idx = json_text.find(end_marker, start_idx)
+            
+            if end_idx != -1:
+                json_text = json_text[start_idx:end_idx].strip()
+    
     try:
         # Пытаемся распарсить как JSON
-        json_data = json.loads(text_questions)
+        json_data = json.loads(json_text)
         
-        if isinstance(json_data, list):
-            questions = []
-            for item in json_data:
-                if 'question' in item and 'options' in item and 'correct_answer' in item:
-                    # Конвертируем в нужный формат
-                    answers = []
-                    for i, option in enumerate(item['options'], 1):
-                        answers.append({
-                            'answer': option,
-                            'is_correct': (i == item['correct_answer'])
-                        })
-                    
-                    questions.append({
-                        'question': item['question'],
-                        'answers': answers,
-                        'explanation': item.get('explanation', '')
-                    })
+        questions = []
+        
+        # Обрабатываем разные форматы JSON
+        if isinstance(json_data, dict) and 'questions' in json_data:
+            items = json_data['questions']
+        elif isinstance(json_data, list):
+            items = json_data
+        else:
+            items = []
+        
+        for i, item in enumerate(items):
+            # Проверяем наличие необходимых полей
+            if not isinstance(item, dict):
+                continue
+                
+            question_text = item.get('question', '')
+            if not question_text:
+                continue
+            
+            # Обрабатываем варианты ответов
+            options = item.get('options', item.get('answers', []))
+            if not options:
+                continue
+            
+            # Определяем правильный ответ
+            correct_answer = item.get('correct_answer', '')
+            
+            # Создаем список ответов в нужном формате
+            answers = []
+            for j, option in enumerate(options):
+                # Правильный ответ может быть строкой (текст ответа) или номером
+                is_correct = False
+                
+                if isinstance(correct_answer, str):
+                    # Если correct_answer - строка, сравниваем с текстом варианта
+                    is_correct = (option.strip() == correct_answer.strip())
+                elif isinstance(correct_answer, int):
+                    # Если correct_answer - номер (1-based)
+                    is_correct = (j + 1 == correct_answer)
+                
+                answers.append({
+                    'answer': option.strip(),
+                    'is_correct': is_correct
+                })
+            
+            # Проверяем что есть хотя бы один правильный ответ
+            correct_count = sum(1 for ans in answers if ans['is_correct'])
+            if correct_count == 0:
+                # Если не нашли точного соответствия, пробуем частичное
+                for j, option in enumerate(options):
+                    if correct_answer.lower() in option.lower() or option.lower() in correct_answer.lower():
+                        answers[j]['is_correct'] = True
+                        break
+                else:
+                    # Если все еще не найден, делаем первый вариант правильным
+                    if answers:
+                        answers[0]['is_correct'] = True
+            
+            questions.append({
+                'question': question_text,
+                'answers': answers,
+                'explanation': item.get('explanation', '')
+            })
+        
+        if questions:
             return questions
-    except json.JSONDecodeError:
-        pass
+            
+    except json.JSONDecodeError as e:
+        pass  # Переходим к парсингу в старом формате
     
     # Если JSON не парсится, пробуем старый формат
     question_block_pattern = re.compile(r'(?ms)^\s*(\d+)\.\s*(.+?)(?=^\s*\d+\.\s|\Z)')
@@ -117,7 +192,7 @@ def parse_questions(text_questions: str) -> list[dict]:
     questions = []
     blocks = question_block_pattern.findall(text_questions)
     
-    for number, block in blocks:
+    for i, (number, block) in enumerate(blocks):
         lines = block.splitlines()
         if not lines:
             continue
@@ -126,7 +201,7 @@ def parse_questions(text_questions: str) -> list[dict]:
         answers = []
         explanation = ""
 
-        for line in lines[1:]:
+        for j, line in enumerate(lines[1:], 1):
             line = line.strip()
             if not line:
                 continue
@@ -136,9 +211,10 @@ def parse_questions(text_questions: str) -> list[dict]:
 
             if answer_match:
                 sign, answer_text = answer_match.groups()
+                is_correct = (sign == '+')
                 answers.append({
                     'answer': answer_text.strip(),
-                    'is_correct': (sign == '+')
+                    'is_correct': is_correct
                 })
             elif explanation_match:
                 explanation = explanation_match.group(1).strip()
@@ -149,7 +225,7 @@ def parse_questions(text_questions: str) -> list[dict]:
                 'answers': answers,
                 'explanation': explanation
             })
-            
+    
     return questions
 
 
@@ -240,8 +316,10 @@ class QuestionsGenerator:
 
         # Загрузка промптов из файлов
         print('Загрузка промптов...')
-        self.__user_prompt_template = self.__load_prompt('user_prompt.txt')
-        self.__system_prompt = self.__load_prompt('system_prompt.txt')
+        import os
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.__user_prompt_template = self.__load_prompt(os.path.join(script_dir, 'user_prompt.txt'))
+        self.__system_prompt = self.__load_prompt(os.path.join(script_dir, 'system_prompt.txt'))
         print('Промпты загружены.')
         print('Инициализация генератора завершена.')
 
@@ -382,7 +460,7 @@ class QuestionsGenerator:
             central_objects: центральные объекты из objects в каждом кластере
         '''
         
-        print('Поиск центральных объектов для кластеров...')
+        print('[GENERATION] Finding central objects for clusters')
         centroids = kmeans.cluster_centers_
         labels = kmeans.labels_
         distances = np.linalg.norm(embeddings - centroids[labels], axis=1)
@@ -407,9 +485,10 @@ class QuestionsGenerator:
         Возвращаемое значение (list[dict]): извлечённые вопросы
         '''
 
+
+
         match llm:
             case 'deepseek':
-                print('Генерация вопросов с помощью Deepseek API...')
                 try:
                     # Используем асинхронную функцию
                     loop = asyncio.new_event_loop()
@@ -421,14 +500,15 @@ class QuestionsGenerator:
                     finally:
                         loop.close()
                     
-                    print('Ответ от DeepSeek API получен.')
-                    return parse_questions(response_text)
+                    # Парсим ответ
+                    parsed_questions = parse_questions(response_text)
+                    
+                    return parsed_questions
                 except Exception as e:
                     print(f'Ошибка при работе с DeepSeek API: {e}')
                     return []
             
             case 'qwen':
-                print('Генерация вопросов с помощью Qwen API...')
                 try:
                     # Используем асинхронную функцию
                     loop = asyncio.new_event_loop()
@@ -440,13 +520,15 @@ class QuestionsGenerator:
                     finally:
                         loop.close()
                     
-                    return parse_questions(response_text)
+                    # Парсим ответ
+                    parsed_questions = parse_questions(response_text)
+                    
+                    return parsed_questions
                 except Exception as e:
                     print(f'Ошибка при работе с Qwen API: {e}')
                     return []
             
             case 'iceq':
-                print('Использование квантованной ICEQ Model...')
                 if self.iceq_model is None:
                     raise ValueError("Модель ICEQ не загружена")
                 
@@ -455,6 +537,7 @@ class QuestionsGenerator:
                     .replace(CHUNKS_PROMPT_TAG, text_content)
 
                 prompt = self.__system_prompt + '\n' + user_prompt
+                
                 messages = [
                     {'role': 'user', 'content': prompt}
                 ]
@@ -481,9 +564,12 @@ class QuestionsGenerator:
                 ]
 
                 response = self.iceq_model['tokenizer'].batch_decode(generated_ids, skip_special_tokens=True)[0]
-                print('Ответ от ICEQ Model получен.')
+                
+                # Парсим ответ
+                parsed_questions = parse_questions(response)
 
-                return parse_questions(response)
+                return parsed_questions
+
 
     def __generate_iceq(self, text: str, num_questions: int) -> List[Dict]:
         if not self.iceq_model:
@@ -629,7 +715,7 @@ class QuestionsGenerator:
             if self.iceq_model is None:
                 raise ValueError("Не удалось загрузить модель ICEQ. Попробуйте использовать 'deepseek' или 'qwen' вместо 'iceq'.")
 
-        print(f'Начало генерации {questions_num} вопросов...')
+        print(f'[GENERATION] Starting generation of {questions_num} questions')
         
         # Простая проверка: разделяем текст на параграфы и смотрим, хватит ли для вопросов
         initial_chunks = text.split('\n\n')  # Разделяем по двойным переносам (параграфы)
@@ -664,11 +750,11 @@ class QuestionsGenerator:
         # Фильтруем слишком короткие чанки
         chunks = list(filter(lambda chunk: self.__filter_chunks(chunk, min_words_in_chunk), chunks))
         chunks = np.array(chunks)
-        print(f'Получено {len(chunks)} чанков после фильтрации.')
+        print(f'[GENERATION] Filtered chunks: {len(chunks)}')
 
         # Если чанков слишком мало, используем упрощенную генерацию
         if len(chunks) < MIN_CLUSTERS_NUM:
-            print(f'Чанков слишком мало ({len(chunks)}), используем упрощенную генерацию...')
+            print(f'[GENERATION] Too few chunks ({len(chunks)}), using simplified generation')
             # Используем оптимизированный метод для ICEQ
             if llm == 'iceq':
                 questions = self.__generate_iceq(text, questions_num)
@@ -677,17 +763,17 @@ class QuestionsGenerator:
                 prompt = self.__user_prompt_template \
                     .replace(QUESTIONS_NUM_PROMPT_TAG, str(questions_num)) \
                     .replace(CHUNKS_PROMPT_TAG, text[:2000])  # Ограничиваем длину
-                return self.__get_questions(llm, prompt)
+                return self.__get_questions(llm, prompt, questions_num)
 
         # Вычисление эмбеддингов для кластеризации чанков
-        print('Вычисление эмбеддингов для кластеризации...')
+        print('[GENERATION] Computing clustering embeddings')
         clustering_embeddings = self.__clustering_model.encode(
             chunks,
             convert_to_tensor=True,
             normalize_embeddings=True,
             device=self.device
         ).cpu().numpy()
-        print('Эмбеддинги для кластеризации вычислены.')
+        print('[GENERATION] Clustering embeddings computed')
 
         # Определение оптимального количества кластеров
         paragraph_num = len(text.split('\n'))
@@ -695,30 +781,33 @@ class QuestionsGenerator:
             MAX_CLUSTERS_NUM,
             max(MIN_CLUSTERS_NUM, int(paragraph_num * DATA_PART))
         )
-        print(f'Количество кластеров: {clusters_num}')
+        print(f'[GENERATION] Number of clusters: {clusters_num}')
 
         # Выполнение K-means кластеризации
-        print('Запуск K-means кластеризации...')
+        print('[GENERATION] Running K-means clustering')
         kmeans = KMeans(n_clusters=clusters_num, random_state=42)
         kmeans.fit(clustering_embeddings)
-        print('Кластеризация завершена.')
+        print('[GENERATION] Clustering completed')
 
         # Поиск центральных объектов в каждом кластере
         target_chunks = self.__get_central_objects(kmeans, clustering_embeddings, chunks)
-        print('Передача чанков для генерации...')
+        print(f'[GENERATION] Found {len(target_chunks)} central chunks')
         
         # Объединяем отобранные чанки для генерации
         text_for_generation = '\n\n'.join(target_chunks)
+        
+        print('[GENERATION] Sending request to model')
         questions = self.__get_questions(llm, text_for_generation, questions_num)
+        print(f'[GENERATION] Received {len(questions) if questions else 0} questions')
 
         # Если вопросы не были сгенерированы, возвращаем пустой список
         if not questions:
-            print('Вопросы не были сгенерированы.')
+            print('[GENERATION] Error: no questions generated')
             return []
 
         try:
             # Добавление объяснений через семантический поиск
-            print('Вычисление эмбеддингов для поиска...')
+            print('[GENERATION] Extracting embeddings for explanations')
             doc_embeddings = self.__search_model.encode(
                 target_chunks,
                 prompt_name='search_document',
@@ -729,21 +818,17 @@ class QuestionsGenerator:
                 prompt_name='search_query',
                 device=self.device
             )
-            print('Эмбеддинги для поиска вычислены.')
 
             # Проверка корректности эмбеддингов
             if query_embeddings is None or len(query_embeddings.shape) < 2 or query_embeddings.shape[0] == 0:
-                print("⚠️ Не удалось создать эмбеддинги для вопросов. Объяснения будут пропущены.")
+                print('[GENERATION] Error creating embeddings')
                 raise ValueError("Некорректные эмбеддинги для запроса")
 
             # Создание FAISS индекса для быстрого поиска похожих чанков
-            print('Настройка FAISS индекса...')
             index = faiss.IndexFlatIP(doc_embeddings.shape[1])  # Косинусное расстояние
             index.add(doc_embeddings)
-            print('FAISS индекс готов.')
 
             # Поиск наиболее релевантных чанков для каждого вопроса
-            print('Поиск соответствий вопросов и чанков...')
             _, indices = index.search(query_embeddings, 1)
 
             # Добавление объяснений к вопросам
@@ -753,7 +838,7 @@ class QuestionsGenerator:
                     question['explanation'] = str(explanation_chunk[0])
                 
         except Exception as e:
-            print(f'⚠️ Ошибка при добавлении объяснений из контекста: {e}')
+            print(f'[GENERATION] Error adding explanations: {e}')
             # Возвращаем вопросы без объяснений при ошибке
             for q in questions:
                 if not q.get('explanation'):
@@ -761,23 +846,19 @@ class QuestionsGenerator:
 
         # Финальная статистика по времени
         actual_time = time.time() - start_time
-        
-        # Определяем полное название модели для красивого вывода
-        model_names = {
-            'deepseek': 'DeepSeek-V3',
-            'qwen': 'Qwen-3-235B',
-            'iceq': 'ICEQ (локальная)'
-        }
-        model_display = model_names.get(llm, llm.upper())
-        
-        print()
-        print(f'🎉 ГЕНЕРАЦИЯ ЗАВЕРШЕНА!')
-        print(f'   🤖 Модель: {model_display}')
-        print(f'   ⏱️  Фактическое время: {actual_time:.1f} сек ({actual_time/60:.1f} мин)')
-        print(f'   📈 Ожидалось: {time_estimate["estimated_seconds"]} сек')
-        print(f'   📊 Разница: {actual_time - time_estimate["estimated_seconds"]:.1f} сек')
-        print(f'   📝 Результат: {len(questions)} вопросов')
-        print()
+        print(f'[GENERATION] Generation completed in {actual_time:.1f}s, generated {len(questions)} questions')
+
+        # Логируем статистику создания теста
+        try:
+            stats_logger.log_test_creation(
+                text_chars_count=len(text),
+                model_used=llm,
+                questions_generated=len(questions),
+                generation_time=actual_time
+            )
+        except Exception:
+            # Молча игнорируем ошибки логирования
+            pass
         
         return questions
 
@@ -796,6 +877,19 @@ class QuestionsGenerator:
         text_length = len(text)
         word_count = len(text.split())
         
+        # Пытаемся получить оценку из накопленной статистики
+        try:
+            estimated_time = stats_logger.get_estimated_generation_time(text_length, llm)
+            if estimated_time > 0:
+                return {
+                    'estimated_time_seconds': estimated_time,
+                    'estimated_time_formatted': self._format_time(estimated_time),
+                    'source': 'statistics'
+                }
+        except Exception:
+            pass
+        
+        # Fallback на базовые оценки если статистики нет
         if llm == 'iceq':
             # Базовое время для ICEQ модели с 8-битным квантованием
             base_time_per_question = 3.5  # секунд на вопрос
@@ -812,11 +906,29 @@ class QuestionsGenerator:
         return {
             'estimated_seconds': int(estimated_time),
             'estimated_minutes': round(estimated_time / 60, 1),
+            'estimated_time_formatted': self._format_time(estimated_time),
             'text_length': text_length,
             'word_count': word_count,
             'questions_count': questions_num,
-            'model': llm
+            'model': llm,
+            'source': 'baseline'
         }
+    
+    def _format_time(self, seconds: float) -> str:
+        """Форматирует время в человекочитаемый формат"""
+        if seconds < 60:
+            return f"{int(seconds)} сек"
+        elif seconds < 3600:
+            minutes = int(seconds // 60)
+            remaining_seconds = int(seconds % 60)
+            if remaining_seconds > 0:
+                return f"{minutes} мин {remaining_seconds} сек"
+            else:
+                return f"{minutes} мин"
+        else:
+            hours = int(seconds // 3600)
+            minutes = int((seconds % 3600) // 60)
+            return f"{hours} ч {minutes} мин"
 
 
 if __name__ == '__main__':
